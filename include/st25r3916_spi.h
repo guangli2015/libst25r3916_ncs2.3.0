@@ -1,0 +1,48 @@
+/*
+ * Copyright (c) 2019 Nordic Semiconductor ASA
+ *
+ * SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+ */
+
+#ifndef ST25R3916_SPI_H_
+#define ST25R3916_SPI_H_
+
+#include <stddef.h>
+#include <zephyr/types.h>
+#include <zephyr/sys/util.h>
+
+/**
+ * @file
+ * @defgroup st25r3911b_nfc_spi ST25R3911B NFC Reader SPI
+ * @{
+ *
+ * @brief API for the ST25R3911B NFC Reader SPI communication.
+ */
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+
+/** @brief Initialize ST25R3911B NFC Reader SPI hardware interface.
+ *
+ *  @details This function initializes the hardware SPI interface
+ *           according to ST25R3911B IC documentation chapter 1.2.12.
+ *
+ *  @retval 0 If the operation was successful.
+ *            Otherwise, a (negative) error code is returned.
+ */
+int st25r3911b_spi_init(void);
+int st25r3916_spiTxRx(const uint8_t *txData, uint8_t *rxData, uint16_t length);
+
+
+
+#ifdef __cplusplus
+}
+#endif
+
+/**
+ * @}
+ */
+
+#endif /* ST25R3911B_SPI_H_ */

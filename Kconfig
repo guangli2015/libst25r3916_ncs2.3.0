@@ -1,0 +1,27 @@
+#
+# Copyright (c) 2023 Nordic Semiconductor ASA
+#
+# SPDX-License-Identifier: LicenseRef-Nordic-5-Clause
+#
+
+# Workaround for not being able to have commas in macro arguments
+DT_COMPAT_ST_ST25R3916 := st,st25r3911b
+
+menuconfig ST25R3916_LIB
+	bool "NFC ST25R3916 library"
+	depends on $(dt_compat_enabled,$(DT_COMPAT_ST_ST25R3916))
+	help
+	  Enable the NFC ST25R3916 library.
+
+	  In order to enable this library, the devicetree must have a
+	  node with compatible "st,st25r3916" enabled. This provides
+	  devicetree data which is used to configure board-specific
+	  code.
+
+if ST25R3916_LIB
+
+module = ST25R3916_LIB
+module-str = ST25R3916
+source "${ZEPHYR_BASE}/subsys/logging/Kconfig.template.log_config"
+
+endif # ST25R3916_LIB

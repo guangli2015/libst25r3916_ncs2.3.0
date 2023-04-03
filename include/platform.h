@@ -102,6 +102,10 @@
 #define platformUnprotectST25RIrqStatus()             platformUnprotectST25RComm()                             /*!< Unprotect the IRQ status var - IRQ enable on a single thread environment (MCU) ; Mutex unlock on a multi thread environment         */
 
 
+#define platformProtectWorker()                  /*!< Protect RFAL Worker/Task/Process from concurrent execution on multi thread platforms   */
+#define platformUnprotectWorker()               /*!< Unprotect RFAL Worker/Task/Process from concurrent execution on multi thread platforms */
+
+
 #define platformLedOff( port, pin )                                      /*!< Turns the given LED Off                     */
 #define platformLedOn( port, pin )                                             /*!< Turns the given LED On                      */
 #define platformLedToggle( port, pin )                                    /*!< Toggles the given LED                       */
@@ -111,11 +115,12 @@
 //#define platformGpioToggle( port, pin )                                       /*!< Toggles the given GPIO                      */
 //#define platformGpioIsHigh( port, pin )                        /*!< Checks if the given LED is High             */
 //#define platformGpioIsLow( port, pin )                                       /*!< Checks if the given LED is Low              */
+#define platformLedsInitialize()				   /*!< Initializes the pins used as LEDs to outputs  */
 
 #define platformTimerCreate(t)                timerCalculateTimer(t)    /*!< Create a timer with the given time (ms)     */
 #define platformTimerIsExpired(timer)         timerIsExpired(timer)     /*!< Checks if the given timer is expired        */
 #define platformDelay(t)                      timerDelay(t)             /*!< Performs a delay for the given time (ms)    */
-#define platformGetSysTick()                  platformGetSysTick_linux()/*!< Get System Tick ( 1 tick = 1 ms)            */
+#define platformGetSysTick()                  platformGetSysTick_zephyr()/*!< Get System Tick ( 1 tick = 1 ms)            */
 #define platformTimerDestroy(t)		       
 
 
@@ -137,6 +142,9 @@
 #define platformI2CSlaveAddrRD(add)                                                                            /*!< I2C Slave address for Read operation        */
 
 #define platformLog(...)                                                                                       /*!< Log  method                                 */
+
+#define platformIrqST25RSetCallback( cb )		   /*!< Sets ST25R ISR callback 					  */
+
 #if 0
  /*
  ******************************************************************************

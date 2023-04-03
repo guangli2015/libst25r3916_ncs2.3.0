@@ -15,6 +15,8 @@
 
 #include "st25r3916_spi.h"
 #include "st25r3916_com.h"
+#include "st25r3916_irq.h"
+#include "example_poller.h"
 
 LOG_MODULE_DECLARE(st25r3916);
 
@@ -44,6 +46,9 @@ int st25r3916_nfca_init()
 		return err;
 	}
 	LOG_INF("aftval 0x%x \n",val);
+	//st25r3916InitInterrupts();
+		/* Initialize rfal and run example code for NFCA */
+	exampleRfalPollerRun();
 	return 0;
 }
 

@@ -1,29 +1,29 @@
----- platformLog Matches (28 in 4 files) ----
-exampleRfalPoller.c (source\st25r3916) line 90 : static int platformLog(const char* format, ...);
-exampleRfalPollerRun in exampleRfalPoller.c (source\st25r3916) :             platformLog("\r\nRFAL initialization failed...\r\n");
-exampleRfalPollerRun in exampleRfalPoller.c (source\st25r3916) :     platformLog("\n\rExample RFAL Poller started \r\n");
-exampleRfalPollerRun in exampleRfalPoller.c (source\st25r3916) :                 platformLog("Device(s) found: %d \r\n", gDevCnt);
-exampleRfalPollerRun in exampleRfalPoller.c (source\st25r3916) :                             platformLog(" NFC-A device UID: %s \r\n", hex2str(gDevList[i].dev.nfca.nfcId1, gDevList[i].dev.nfca.nfcId1Len));
-exampleRfalPollerRun in exampleRfalPoller.c (source\st25r3916) :                             platformLog(" NFC-B device UID: %s \r\n", hex2str(gDevList[i].dev.nfcb.sensbRes.nfcid0, RFAL_NFCB_NFCID0_LEN));
-exampleRfalPollerRun in exampleRfalPoller.c (source\st25r3916) :                             platformLog(" NFC-F device UID: %s \r\n", hex2str(gDevList[i].dev.nfcf.sensfRes.NFCID2, RFAL_NFCF_NFCID2_LEN));
-exampleRfalPollerRun in exampleRfalPoller.c (source\st25r3916) :                             platformLog(" NFC-V device UID: %s \r\n", hex2str(gDevList[i].dev.nfcv.InvRes.UID, RFAL_NFCV_UID_LEN));
-exampleRfalPollerRun in exampleRfalPoller.c (source\st25r3916) :                         platformLog("Data exchange terminated with error: %d \r\n", err);
-exampleRfalPollerActivation in exampleRfalPoller.c (source\st25r3916) :                     platformLog("NFC-A T1T device activated \r\n");                   /* NFC-A T1T device activated */
-exampleRfalPollerActivation in exampleRfalPoller.c (source\st25r3916) :                     platformLog("NFC-A T2T device activated \r\n");                   /* NFC-A T2T device activated */
-exampleRfalPollerActivation in exampleRfalPoller.c (source\st25r3916) :                     platformLog("NFC-A T4T (ISO-DEP) device activated \r\n");         /* NFC-A T4T device activated */
-exampleRfalPollerActivation in exampleRfalPoller.c (source\st25r3916) :                     platformLog("NFC-A P2P (NFC-DEP) device activated \r\n");         /* NFC-A P2P device activated */
-exampleRfalPollerActivation in exampleRfalPoller.c (source\st25r3916) :                 platformLog("NFC-B T4T (ISO-DEP) device activated \r\n");             /* NFC-B T4T device activated */
-exampleRfalPollerActivation in exampleRfalPoller.c (source\st25r3916) :             platformLog("NFC-B device activated \r\n");                               /* NFC-B  device activated */
-exampleRfalPollerActivation in exampleRfalPoller.c (source\st25r3916) :                 platformLog("NFC-F P2P (NFC-DEP) device activated \r\n");             /* NFC-A P2P device activated */
-exampleRfalPollerActivation in exampleRfalPoller.c (source\st25r3916) :             platformLog("NFC-F T3T device activated \r\n");                           /* NFC-F T3T device activated */
-exampleRfalPollerActivation in exampleRfalPoller.c (source\st25r3916) :             platformLog("NFC-V T5T device activated \r\n");                           /* NFC-V T5T device activated */
-exampleRfalPollerDeactivate in exampleRfalPoller.c (source\st25r3916) :         platformLog("Device deactivated \r\n");
-platform.h (include) line 139 : #define platformLog(...)                                                                                       /*!< Log  method                                 */
-platform.h (include) line 196 : #ifndef platformLog                                                                                       
-platform.h (include) line 197 :     #define platformLog(...)                           /*!< Log method                                    */
-platform.h (include) line 198 : #endif /* platformLog */
-rfal_rf.h (include) line 228 : #define rfalLogE(...)             platformLog(__VA_ARGS__)        /*!< Macro for the error log method                  */
-rfal_rf.h (include) line 229 : #define rfalLogW(...)             platformLog(__VA_ARGS__)        /*!< Macro for the warning log method                */
-rfal_rf.h (include) line 230 : #define rfalLogI(...)             platformLog(__VA_ARGS__)        /*!< Macro for the info log method                   */
-rfal_rf.h (include) line 231 : #define rfalLogD(...)             platformLog(__VA_ARGS__)        /*!< Macro for the debug log method                  */
-st25r3916_aat.c (source\st25r3916) line 62 : #define st25r3916AatLog(...)     /* platformLog(__VA_ARGS__) */   /*!< Logging macro */
+----  timerIsExpired Matches (4 in 3 files) ----
+platform.h (include) line 120 : 
+#define platformTimerCreate(t)                timerCalculateTimer(t)    /*!< Create a timer with the given time (ms)     */
+#define platformTimerIsExpired(timer)         timerIsExpired(timer)     /*!< Checks if the given timer is expired        */
+#define platformDelay(t)                      timerDelay(t)             /*!< Performs a delay for the given time (ms)    */
+#define platformGetSysTick()                  platformGetSysTick_zephyr()/*!< Get System Tick ( 1 tick = 1 ms)            */
+#define platformTimerDestroy(t)		       
+pltf_timer.c (source\st25r3916) line 34 : 
+/*******************************************************************************/
+bool timerIsExpired( uint32_t timer )
+{
+  uint32_t uDiff;
+  int32_t sDiff;
+  LOG_INF("timerIsExpired");
+  uDiff = (timer - platformGetSysTick());   /* Calculate the diff between the timers */
+  sDiff = uDiff;                            /* Convert the diff to a signed var      */
+  /* Having done this has two side effects: 
+pltf_timer.h (include) line 46 : 
+*/
+#define timerIsRunning(t)            (!timerIsExpired(t))
+
+/*
+******************************************************************************
+pltf_timer.h (include) line 89 : 
+ */
+bool timerIsExpired( uint32_t timer );
+
+ /*! 
+ *****************************************************************************

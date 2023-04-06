@@ -94,12 +94,21 @@ static int platformGpioIsHigh(void)
 	value = (value < 0) ? 0 : value;
 	return value;
 }
-static void st25r3916Isr(const struct device *gpiob, struct gpio_callback *cb,
+static struct k_sem *sem;
+
+static void irq_pin_cb(const struct device *gpiob, struct gpio_callback *cb,
 		       uint32_t pins)
 {
+	k_sem_give(sem);
+}
+
+ void st25r3916Isr(void)
+{
+	//LOG_INF("*");
+
 	st25r3916CheckForReceivedInterrupts();
     
-    // Check if callback is set and run it
+     //Check if callback is set and run it
     if( NULL != st25r3916interrupt.callback )
     {
         st25r3916interrupt.callback();
@@ -110,7 +119,7 @@ static int platformIrqST25RPinInitialize(void)
 {
 	int err;
 
-	LOG_DBG("Setting up interrupts on %s pin %d", irq_gpio.port->name,
+	LOG_INF("Setting up interrupts on %s pin %d", irq_gpio.port->name,
 		irq_gpio.pin);
 
 	if (!device_is_ready(irq_gpio.port)) {
@@ -124,7 +133,7 @@ static int platformIrqST25RPinInitialize(void)
 		return err;
 	}
 
-	gpio_init_callback(&gpio_cb, st25r3916Isr, BIT(irq_gpio.pin));
+	gpio_init_callback(&gpio_cb, irq_pin_cb, BIT(irq_gpio.pin));
 
 	err = gpio_add_callback(irq_gpio.port, &gpio_cb);
 	if (err) {
@@ -139,7 +148,7 @@ static int platformIrqST25RPinInitialize(void)
 * GLOBAL FUNCTIONS
 ******************************************************************************
 */
-void st25r3916InitInterrupts( void )
+void st25r3916InitInterrupts( struct k_sem *irq_sem)
 {
     platformIrqST25RPinInitialize();
     platformIrqST25RSetCallback( st25r3916Isr );
@@ -149,6 +158,7 @@ void st25r3916InitInterrupts( void )
     st25r3916interrupt.prevCallback = NULL;
     st25r3916interrupt.status       = ST25R3916_IRQ_MASK_NONE;
     st25r3916interrupt.mask         = ST25R3916_IRQ_MASK_NONE;
+	sem = irq_sem;
 }
 
 
@@ -171,15 +181,15 @@ void st25r3916CheckForReceivedInterrupts( void )
 {
     uint8_t  iregs[ST25R3916_INT_REGS_LEN];
     uint32_t irqStatus;
-    
+  //  LOG_INF("I1");
     /* Initialize iregs */
     irqStatus = ST25R3916_IRQ_MASK_NONE;
     ST_MEMSET( iregs, (int32_t)(ST25R3916_IRQ_MASK_ALL & 0xFFU), ST25R3916_INT_REGS_LEN );
     
-    
+     
     /* In case the IRQ is Edge (not Level) triggered read IRQs until done */
    while( platformGpioIsHigh() )
-   {
+   {//LOG_INF("I2");
        st25r3916ReadMultipleRegisters( ST25R3916_REG_IRQ_MAIN, iregs, ST25R3916_INT_REGS_LEN );
        
        irqStatus |= (uint32_t)iregs[0];
@@ -187,7 +197,7 @@ void st25r3916CheckForReceivedInterrupts( void )
        irqStatus |= (uint32_t)iregs[2]<<16;
        irqStatus |= (uint32_t)iregs[3]<<24;
    }
-   
+    //LOG_INF("I3");
    /* Forward all interrupts, even masked ones to application */
    platformProtectST25RIrqStatus();
    st25r3916interrupt.status |= irqStatus;
@@ -229,15 +239,15 @@ uint32_t st25r3916WaitForInterruptsTimed( uint32_t mask, uint16_t tmo )
 {
     uint32_t tmrDelay;
     uint32_t status;
-    
+    //LOG_INF("st25r3916WaitForInterruptsTimed1");
     tmrDelay = platformTimerCreate( tmo );
-    
+    //LOG_INF("st25r3916WaitForInterruptsTimed2");
     /* Run until specific interrupt has happen or the timer has expired */
     do 
     {
         status = (st25r3916interrupt.status & mask);
     } while( ( (!platformTimerIsExpired( tmrDelay )) || (tmo == 0U)) && (status == 0U) );
-    
+   //  LOG_INF("st25r3916WaitForInterruptsTimed3");
     platformTimerDestroy( tmrDelay );
 
     status = st25r3916interrupt.status & mask;

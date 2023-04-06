@@ -13,12 +13,14 @@
 #include <st25r3916_nfca.h>
 
 
+
 #include "st25r3916_spi.h"
 #include "st25r3916_com.h"
 #include "st25r3916_irq.h"
 #include "example_poller.h"
 
 LOG_MODULE_DECLARE(st25r3916);
+
 
 
 
@@ -31,7 +33,7 @@ int st25r3916_nfca_init()
 	if (err) {
 		return err;
 	}
-	LOG_INF("preval 0x%x \n",val);
+/*	LOG_INF("preval 0x%x \n",val);
 	err=st25r3916ReadRegister(ST25R3916_REG_OP_CONTROL,&val);
 	if (err) {
 		LOG_INF("st25r3916ReadRegister fail\n");
@@ -45,10 +47,12 @@ int st25r3916_nfca_init()
 		LOG_INF("st25r3916ReadRegister fail\n");
 		return err;
 	}
-	LOG_INF("aftval 0x%x \n",val);
+	LOG_INF("aftval 0x%x \n",val);*/
 	//st25r3916InitInterrupts();
 		/* Initialize rfal and run example code for NFCA */
 	exampleRfalPollerRun();
+
+	
 	return 0;
 }
 

@@ -156,7 +156,8 @@ uint32_t st25r3916GetInterrupt( uint32_t mask );
  *
  *****************************************************************************
  */
-void st25r3916InitInterrupts( void );
+ void st25r3916InitInterrupts( struct k_sem *irq_sem);
+
 
 /*! 
  *****************************************************************************
@@ -186,7 +187,7 @@ void st25r3916CheckForReceivedInterrupts( void );
  *  This function modiefies the interupt
  *****************************************************************************
  */
-//void  st25r3916Isr( void );
+void  st25r3916Isr( void );
 
 /*! 
  *****************************************************************************

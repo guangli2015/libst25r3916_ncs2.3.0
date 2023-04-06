@@ -16,6 +16,7 @@
 #include "platform.h"
 
 
+LOG_MODULE_DECLARE(st25r3916);
 
 uint32_t platformGetSysTick_zephyr()
 {
@@ -35,7 +36,7 @@ bool timerIsExpired( uint32_t timer )
 {
   uint32_t uDiff;
   int32_t sDiff;
-  
+ // LOG_INF("timerIsExpired");
   uDiff = (timer - platformGetSysTick());   /* Calculate the diff between the timers */
   sDiff = uDiff;                            /* Convert the diff to a signed var      */
   /* Having done this has two side effects: 

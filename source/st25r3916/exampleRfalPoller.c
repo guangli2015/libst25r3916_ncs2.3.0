@@ -240,13 +240,14 @@ extern void exampleRfalPollerRun(void)
 {
     ReturnCode err;
     uint8_t    i;
-    
-    rfalAnalogConfigInitialize();                                                     /* Initialize RFAL's Analog Configs */
+    LOG_INF("exampleRfalPollerRun1");
+    rfalAnalogConfigInitialize();
+	LOG_INF("exampleRfalPollerRun2");/* Initialize RFAL's Analog Configs */
     if(rfalInitialize() != ERR_NONE)                                                  /* Initialize RFAL */
     {
         /* in case the rfal initalization failed signal it by flashing all LED
            and stoping all operations */
-        while(1)
+        while(0)
         {
             platformLedOff(LED_NFCA_PORT, LED_NFCA_PIN);
             platformLedOff(LED_NFCB_PORT, LED_NFCB_PIN);
@@ -264,10 +265,12 @@ extern void exampleRfalPollerRun(void)
             platformLedOn(LED_NFCF_PORT, LED_NFCF_PIN);
             platformLedOn(LED_NFCV_PORT, LED_NFCV_PIN);
         }
+		platformLog("\r\nRFAL initialization failed...\r\n");
     }
+	LOG_INF("exampleRfalPollerRun3");
 
     platformLog("\n\rExample RFAL Poller started \r\n");
-
+#if 1
     while(1)
     {
         rfalWorker();                                                                 /* Execute RFAL process */
@@ -399,6 +402,7 @@ extern void exampleRfalPollerRun(void)
                 return;
         }
     }
+#endif
 }
 
 
@@ -585,7 +589,7 @@ static bool exampleRfalPollerCollResolution( void )
             }
         }
     }
-    
+  
     return (gDevCnt > 0);
 }
 

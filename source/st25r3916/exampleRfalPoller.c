@@ -240,9 +240,9 @@ extern void exampleRfalPollerRun(void)
 {
     ReturnCode err;
     uint8_t    i;
-    LOG_INF("exampleRfalPollerRun1");
+/*    LOG_INF("exampleRfalPollerRun1");*/
     rfalAnalogConfigInitialize();
-	LOG_INF("exampleRfalPollerRun2");/* Initialize RFAL's Analog Configs */
+/*	LOG_INF("exampleRfalPollerRun2");*//* Initialize RFAL's Analog Configs */
     if(rfalInitialize() != ERR_NONE)                                                  /* Initialize RFAL */
     {
         /* in case the rfal initalization failed signal it by flashing all LED
@@ -267,7 +267,7 @@ extern void exampleRfalPollerRun(void)
         }
 		platformLog("\r\nRFAL initialization failed...\r\n");
     }
-	LOG_INF("exampleRfalPollerRun3");
+/*	LOG_INF("exampleRfalPollerRun3");*/
 
     platformLog("\n\rExample RFAL Poller started \r\n");
 #if 1

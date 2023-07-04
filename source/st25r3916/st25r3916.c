@@ -138,7 +138,7 @@ ReturnCode st25r3916Initialize( void )
 {
     uint16_t vdd_mV;
     ReturnCode ret;
-    LOG_INF("st25r3916Initialize1");
+/*    LOG_INF("st25r3916Initialize1");*/
 #ifndef RFAL_USE_I2C
     /* Ensure a defined chip select state */
     platformSpiDeselect();
@@ -158,7 +158,7 @@ ReturnCode st25r3916Initialize( void )
         return ERR_HW_MISMATCH;
     }
 
-   // st25r3916InitInterrupts();
+   /* st25r3916InitInterrupts();*/
     st25r3916ledInit();
     
 
@@ -171,7 +171,7 @@ ReturnCode st25r3916Initialize( void )
 
     /* Disable internal overheat protection */
     st25r3916ChangeTestRegisterBits( 0x04, 0x10, 0x10 );
-LOG_INF("st25r3916Initialize2");
+/*LOG_INF("st25r3916Initialize2");*/
 
 #ifdef ST25R_SELFTEST
     /******************************************************************************
@@ -186,7 +186,7 @@ LOG_INF("st25r3916Initialize2");
         platformErrorHandle();
         return ERR_IO;
     }
-    LOG_INF("st25r3916Initialize3");
+/*    LOG_INF("st25r3916Initialize3");*/
     /* Restore default value */
     st25r3916WriteRegister( ST25R3916_REG_BIT_RATE, 0x00 );
 
@@ -197,18 +197,18 @@ LOG_INF("st25r3916Initialize2");
      *  - return ERR_TIMEOUT when the Wake-up timer interrupt is not received
      */
     st25r3916WriteRegister( ST25R3916_REG_WUP_TIMER_CONTROL, ST25R3916_REG_WUP_TIMER_CONTROL_wur|ST25R3916_REG_WUP_TIMER_CONTROL_wto);
-		LOG_INF("st25r3916Initialize4");
+/*		LOG_INF("st25r3916Initialize4");*/
     st25r3916EnableInterrupts( ST25R3916_IRQ_MASK_WT );
 
 
     st25r3916ExecuteCommand( ST25R3916_CMD_START_WUP_TIMER );
-		LOG_INF("st25r3916Initialize5");
+/*		LOG_INF("st25r3916Initialize5");*/
     if(st25r3916WaitForInterruptsTimed(ST25R3916_IRQ_MASK_WT, ST25R3916_TEST_WU_TOUT) == 0U )
     {
         platformErrorHandle();
         return ERR_TIMEOUT;
     }
-	LOG_INF("st25r3916Initialize6");
+/*	LOG_INF("st25r3916Initialize6");*/
 
     st25r3916DisableInterrupts( ST25R3916_IRQ_MASK_WT );
     st25r3916WriteRegister( ST25R3916_REG_WUP_TIMER_CONTROL, 0U );

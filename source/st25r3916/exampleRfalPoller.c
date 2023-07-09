@@ -110,6 +110,7 @@ static uint32_t logCnt = 0;
 #define EXAMPLE_RFAL_POLLER_FOUND_B      0x02  /* NFC-B device found Flag     */
 #define EXAMPLE_RFAL_POLLER_FOUND_F      0x04  /* NFC-F device found Flag     */
 #define EXAMPLE_RFAL_POLLER_FOUND_V      0x08  /* NFC-V device Flag           */
+#define EXAMPLE_RFAL_POLLER_FOUND_Prop   0x10  /* NFC-Prop device Flag           */
 
 /*
 ******************************************************************************
@@ -134,7 +135,8 @@ typedef enum{
     EXAMPLE_RFAL_POLLER_TYPE_NFCA  =  0,                 /* NFC-A device type           */
     EXAMPLE_RFAL_POLLER_TYPE_NFCB  =  1,                 /* NFC-B device type           */
     EXAMPLE_RFAL_POLLER_TYPE_NFCF  =  2,                 /* NFC-F device type           */
-    EXAMPLE_RFAL_POLLER_TYPE_NFCV  =  3                  /* NFC-V device type           */
+    EXAMPLE_RFAL_POLLER_TYPE_NFCV  =  3,                  /* NFC-V device type           */
+    EXAMPLE_RFAL_POLLER_TYPE_NFCProp  =  4                  /* NFC-Prop device type           */
 }exampleRfalPollerDevType;
 
 
@@ -206,6 +208,18 @@ static union {
     rfalNfcDepBufFormat     nfcDepRxBuf;                                /* NFC-DEP Rx buffer format (with header/prologue) */
 }gRxBuf;
 
+/* VASUP-A Command: TCI must be set according to data received via MFi Program  */
+static uint8_t demoEcpVasup[] = { 0x6A,    /* VASUP-A Command             */
+                                  0x02,    /* Byte1  - Format: 2.0        */
+                                  0x00,    /* Byte2  - Terminal Info      */
+                                  0x00,    /* Byte3  - Terminal Type      */
+                                  0x00,    /* Byte4  - Terminal Subtype   */
+                                  0x00,    /* Byte5  - TCI 1              */
+                                  0x00,    /* Byte6  - TCI 2              */
+                                  0x00,    /* Byte7  - TCI 3              */
+                                  0x00   /* Reader Identifier */
+};
+static uint8_t expTransacSelectApp[] = { 0x00, 0xA4, 0x04, 0x00, 0x0c, 0xA0, 0x00, 0x00, 0x08, 0x58, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00};
 
 /*
 ******************************************************************************
@@ -340,6 +354,24 @@ extern void exampleRfalPollerRun(void)
                             platformLog(" NFC-V device UID: %s \r\n", hex2str(gDevList[i].dev.nfcv.InvRes.UID, RFAL_NFCV_UID_LEN));
                             platformLedOn(LED_NFCV_PORT, LED_NFCV_PIN);
                             break;
+						case EXAMPLE_RFAL_POLLER_TYPE_NFCProp:
+                            platformLog(" NFC-prop device UID: %s \r\n", hex2str(gDevList[i].dev.nfca.nfcId1, gDevList[i].dev.nfca.nfcId1Len));
+                            platformLedOn(LED_NFCV_PORT, LED_NFCA_PIN);
+							/*example code:
+
+    						ReturnCode err;
+    						uint16_t   *rxLen;
+    						uint8_t    *rxData;
+
+    						// Exchange APDU: Unified Access APDUs 
+    						err = demoTransceiveBlocking( expTransacSelectApp, sizeof(expTransacSelectApp), &rxData, &rxLen, RFAL_FWT_NONE );
+
+    						if( (err == ERR_NONE) && (*rxLen > 2) && rxData[*rxLen-2] == 0x90 && rxData[*rxLen-1] == 0x00)
+    						{
+        						// Here more APDUs to implement the protocol are required. 
+    						}
+							*/
+                            break;
                     }
                 }
                 //platformDelay(200);
@@ -405,6 +437,13 @@ extern void exampleRfalPollerRun(void)
 #endif
 }
 
+ReturnCode demoPropNfcTechnologyDetection( void )
+{
+    /* Send VASUP-A */
+    rfalTransceiveBlockingTxRx( demoEcpVasup, sizeof(demoEcpVasup), NULL, 0, NULL, RFAL_TXRX_FLAGS_DEFAULT, RFAL_NFCA_FDTMIN );
+
+    return ERR_NONE;
+}
 
 /*!
  ******************************************************************************
@@ -441,7 +480,11 @@ static bool exampleRfalPollerTechDetetection( void )
         gTechsFound |= EXAMPLE_RFAL_POLLER_FOUND_A;
     }
     
-    
+    err = demoPropNfcTechnologyDetection();
+    if( err == ERR_NONE )
+    {
+        gTechsFound |= EXAMPLE_RFAL_POLLER_FOUND_Prop;
+    }
     /*******************************************************************************/
     /* NFC-B Technology Detection                                                  */
     /*******************************************************************************/
@@ -589,7 +632,27 @@ static bool exampleRfalPollerCollResolution( void )
             }
         }
     }
-  
+
+	/*******************************************************************************/
+    /* NFC-Prop Collision Resolution                                                  */
+    /*******************************************************************************/
+    if( gTechsFound & EXAMPLE_RFAL_POLLER_FOUND_Prop )                                   /* If a NFC-F device was found/detected, perform Collision Resolution */
+    {
+     	rfalNfcaListenDevice nfcaDevList[EXAMPLE_RFAL_POLLER_DEVICES];
+        
+        rfalNfcaPollerInitialize();
+        rfalFieldOnAndStartGT();                                                      /* Ensure GT again as other technologies have also been polled */
+        err = rfalNfcaPollerFullCollisionResolution( RFAL_COMPLIANCE_MODE_NFC, (EXAMPLE_RFAL_POLLER_DEVICES - gDevCnt), nfcaDevList, &devCnt );
+        if( (err == ERR_NONE) && (devCnt != 0) )
+        {
+            for( i=0; i<devCnt; i++ )                                                 /* Copy devices found form local Nfca list into global device list */
+            {
+                gDevList[gDevCnt].type     = EXAMPLE_RFAL_POLLER_TYPE_NFCProp;
+                gDevList[gDevCnt].dev.nfca = nfcaDevList[i];
+                gDevCnt++;
+            }
+        }
+    }
     return (gDevCnt > 0);
 }
 

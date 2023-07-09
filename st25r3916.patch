@@ -1,0 +1,24 @@
+diff --git a/lib/CMakeLists.txt b/lib/CMakeLists.txt
+index 9743e20cd..6f97ab9c9 100644
+--- a/lib/CMakeLists.txt
++++ b/lib/CMakeLists.txt
+@@ -18,6 +18,7 @@ add_subdirectory_ifdef(CONFIG_PDN pdn)
+ add_subdirectory_ifdef(CONFIG_MULTITHREADING_LOCK multithreading_lock)
+ add_subdirectory_ifdef(CONFIG_ADP536X adp536x)
+ add_subdirectory_ifdef(CONFIG_ST25R3911B_LIB st25r3911b)
++add_subdirectory_ifdef(CONFIG_ST25R3916_LIB st25r3916)
+ add_subdirectory_ifdef(CONFIG_FPROTECT fprotect)
+ add_subdirectory(flash_patch)
+ add_subdirectory_ifdef(CONFIG_RAM_POWER_DOWN_LIBRARY ram_pwrdn)
+diff --git a/lib/Kconfig b/lib/Kconfig
+index 809669c98..4a8b749f1 100644
+--- a/lib/Kconfig
++++ b/lib/Kconfig
+@@ -11,6 +11,7 @@ rsource "nrf_modem_lib/Kconfig"
+ rsource "adp536x/Kconfig"
+ rsource "at_monitor/Kconfig"
+ rsource "st25r3911b/Kconfig"
++rsource "st25r3916/Kconfig"
+ rsource "flash_patch/Kconfig"
+ rsource "lte_link_control/Kconfig"
+ rsource "fprotect/Kconfig"

@@ -175,7 +175,7 @@ typedef struct{
 static uint8_t                 t1tReadReq[]    = { 0x01, 0x00, 0x00, 0x11, 0x22, 0x33, 0x44 };                                                   /* T1T READ Block:0 Byte:0 */
 static uint8_t                 t2tReadReq[]    = { 0x30, 0x00 };                                                                                 /* T2T READ Block:0 */
 static uint8_t                 t3tCheckReq[]   = { 0x06, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77, 0x88, 0x01, 0x09, 0x00, 0x01, 0x80, 0x00 };   /* T3T Check/Read command */
-static uint8_t                 t4tSelectReq[]  = { 0x00, 0xA4, 0x00, 0x00, 0x00 };                                                               /* T4T Select MF, DF or EF APDU  */
+static uint8_t                 t4tSelectReq[]  = { 0x00, 0xA4, 0x04, 0x00, 0x0c, 0xA0, 0x00, 0x00, 0x08, 0x58, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00};                                                               /* T4T Select MF, DF or EF APDU  */
 static uint8_t                 t5tSysInfoReq[] = { 0x02, 0x2B };                                                                                 /* NFC-V Get SYstem Information command*/
 static uint8_t                 nfcbReq[]       = { 0x00 };                                                                                       /* NFC-B proprietary command */
 static uint8_t                 llcpSymm[]      = { 0x00, 0x00 };                                                                                 /* LLCP SYMM command */
@@ -211,13 +211,13 @@ static union {
 /* VASUP-A Command: TCI must be set according to data received via MFi Program  */
 static uint8_t demoEcpVasup[] = { 0x6A,    /* VASUP-A Command             */
                                   0x02,    /* Byte1  - Format: 2.0        */
-                                  0x00,    /* Byte2  - Terminal Info      */
-                                  0x00,    /* Byte3  - Terminal Type      */
-                                  0x00,    /* Byte4  - Terminal Subtype   */
-                                  0x00,    /* Byte5  - TCI 1              */
-                                  0x00,    /* Byte6  - TCI 2              */
+                                  0xCB,    /* Byte2  - Terminal Info      */
+                                  0x02,    /* Byte3  - Terminal Type      */
+                                  0x04,    /* Byte4  - Terminal Subtype   */
+                                  0x02,    /* Byte5  - TCI 1              */
+                                  0x11,    /* Byte6  - TCI 2              */
                                   0x00,    /* Byte7  - TCI 3              */
-                                  0x00   /* Reader Identifier */
+                                  0xb0,0x2a,0x52,0x74,0xec,0x02,0x13,0x4d,  /* Reader Identifier */
 };
 static uint8_t expTransacSelectApp[] = { 0x00, 0xA4, 0x04, 0x00, 0x0c, 0xA0, 0x00, 0x00, 0x08, 0x58, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00};
 
@@ -310,21 +310,22 @@ extern void exampleRfalPollerRun(void)
 
             /*******************************************************************************/
             case EXAMPLE_RFAL_POLLER_STATE_TECHDETECT:
-
-                if( !exampleRfalPollerTechDetetection() )                             /* Poll for nearby devices in different technologies */
+       
+                 if( !exampleRfalPollerTechDetetection() )                             /* Poll for nearby devices in different technologies */
                 {
                     gState = EXAMPLE_RFAL_POLLER_STATE_DEACTIVATION;                  /* If no device was found, restart loop */
                     break;
                 }
 
                 gState = EXAMPLE_RFAL_POLLER_STATE_COLAVOIDANCE;                      /* One or more devices found, go to Collision Avoidance */
+                 // gState = EXAMPLE_RFAL_POLLER_STATE_DATAEXCHANGE_START;
                 break;
 
             /*******************************************************************************/
             case EXAMPLE_RFAL_POLLER_STATE_COLAVOIDANCE:
-
+//platformLog("1");
                 if( !exampleRfalPollerCollResolution() )                              /* Resolve any eventual collision */
-                {
+                {//platformLog("2");
                     gState = EXAMPLE_RFAL_POLLER_STATE_DEACTIVATION;                  /* If Collision Resolution was unable to retrieve any device, restart loop */
                     break;
                 }
@@ -355,22 +356,24 @@ extern void exampleRfalPollerRun(void)
                             platformLedOn(LED_NFCV_PORT, LED_NFCV_PIN);
                             break;
 						case EXAMPLE_RFAL_POLLER_TYPE_NFCProp:
-                            platformLog(" NFC-prop device UID: %s \r\n", hex2str(gDevList[i].dev.nfca.nfcId1, gDevList[i].dev.nfca.nfcId1Len));
+                            platformLog(" NFC-prop device i:%d UID: %s \r\n",i, hex2str(gDevList[i].dev.nfca.nfcId1, gDevList[i].dev.nfca.nfcId1Len));
                             platformLedOn(LED_NFCV_PORT, LED_NFCA_PIN);
-							/*example code:
-
+							/*example code:*/
+#if 0
     						ReturnCode err;
-    						uint16_t   *rxLen;
-    						uint8_t    *rxData;
-
+    						uint16_t   rxLen;
+    						uint8_t    rxData[10];
+                                    rfalNfcaPollerInitialize();
+                            rfalFieldOnAndStartGT(); 
     						// Exchange APDU: Unified Access APDUs 
-    						err = demoTransceiveBlocking( expTransacSelectApp, sizeof(expTransacSelectApp), &rxData, &rxLen, RFAL_FWT_NONE );
-
-    						if( (err == ERR_NONE) && (*rxLen > 2) && rxData[*rxLen-2] == 0x90 && rxData[*rxLen-1] == 0x00)
+    						err = rfalTransceiveBlockingTxRx( expTransacSelectApp, sizeof(expTransacSelectApp), (uint8_t*)rxData,sizeof(rxData), &rxLen, RFAL_TXRX_FLAGS_DEFAULT,RFAL_FWT_NONE );
+                            platformLog("\nsended %d",err); 
+    						if( (err == ERR_NONE))
     						{
-        						// Here more APDUs to implement the protocol are required. 
+        						// Here more APDUs to implement the protocol are required.
+                                platformLog("select responsed %x",rxData[0]); 
     						}
-							*/
+#endif							
                             break;
                     }
                 }
@@ -380,32 +383,36 @@ extern void exampleRfalPollerRun(void)
 
             /*******************************************************************************/
             case EXAMPLE_RFAL_POLLER_STATE_ACTIVATION:
-#if 0
+#if 1
                 if ( !exampleRfalPollerActivation(0) )                               /* Any device previous identified can be Activated, on this example will select the firt on the list */
                 {
                     gState = EXAMPLE_RFAL_POLLER_STATE_DEACTIVATION;                  /* If Activation failed, restart loop */
                     break;
                 }
 
-                //gState = EXAMPLE_RFAL_POLLER_STATE_DATAEXCHANGE_START;                /* Device has been properly activated, go to Data Exchange */
-                gState = EXAMPLE_RFAL_POLLER_STATE_DEACTIVATION;
-            break;
+                gState = EXAMPLE_RFAL_POLLER_STATE_DATAEXCHANGE_START;                /* Device has been properly activated, go to Data Exchange */
+                //gState = EXAMPLE_RFAL_POLLER_STATE_DEACTIVATION;
 #endif
+            break;
+
 
             /*******************************************************************************/
-#if 0
+#if 1
             case EXAMPLE_RFAL_POLLER_STATE_DATAEXCHANGE_START:
             case EXAMPLE_RFAL_POLLER_STATE_DATAEXCHANGE_CHECK:
-
+#if 1
                 err = exampleRfalPollerDataExchange();                                /* Perform Data Exchange, in this example a simple transfer will executed in order to do device's presence check */
                 switch( err )
                 {
-                    case ERR_NONE:                                                    /* Data exchange successful  */
-                        platformDelay(300);                                           /* Wait a bit */
+                    case ERR_NONE:
+                    platformLog(" exampleRfalPollerDataExchange ok\n");                                                      /* Data exchange successful  */
+                        platformDelay(300);  
+                                                               /* Wait a bit */
                         gState = EXAMPLE_RFAL_POLLER_STATE_DATAEXCHANGE_START;        /* Trigger new exchange with device */
                         break;
 
-                    case ERR_BUSY:                                                    /* Data exchange ongoing  */
+                    case ERR_BUSY:  
+                     //platformLog("%");                                                    /* Data exchange ongoing  */
                         gState = EXAMPLE_RFAL_POLLER_STATE_DATAEXCHANGE_CHECK;        /* Once triggered/started the Data Exchange only do check until is completed */
                         break;
 
@@ -414,6 +421,8 @@ extern void exampleRfalPollerRun(void)
                         gState = EXAMPLE_RFAL_POLLER_STATE_DEACTIVATION;              /* Restart loop */
                         break;
                 }
+                
+#endif
                 break;
 
 #endif
@@ -423,7 +432,8 @@ extern void exampleRfalPollerRun(void)
                 exampleRfalPollerDeactivate();                                        /* If a card has been activated, properly deactivate the device */
 #endif
                 rfalFieldOff();                                                       /* Turn the Field Off powering down any device nearby */
-                platformDelay(50);                                                    /* Remain a certain period with field off */
+                //platformDelay(50);   
+                k_sleep(K_MSEC(30));                                                 /* Remain a certain period with field off */
                 gState = EXAMPLE_RFAL_POLLER_STATE_INIT;                              /* Restart the loop */
 
                 platformLogClear();
@@ -436,11 +446,12 @@ extern void exampleRfalPollerRun(void)
     }
 #endif
 }
-
+  
 ReturnCode demoPropNfcTechnologyDetection( void )
 {
     /* Send VASUP-A */
-    rfalTransceiveBlockingTxRx( demoEcpVasup, sizeof(demoEcpVasup), NULL, 0, NULL, RFAL_TXRX_FLAGS_DEFAULT, RFAL_NFCA_FDTMIN );
+   ReturnCode ret;
+    ret = rfalTransceiveBlockingTxRx( demoEcpVasup, sizeof(demoEcpVasup), NULL, 0, NULL, RFAL_TXRX_FLAGS_DEFAULT, RFAL_NFCA_FDTMIN );
 
     return ERR_NONE;
 }
@@ -473,18 +484,23 @@ static bool exampleRfalPollerTechDetetection( void )
     
     rfalNfcaPollerInitialize();                                                       /* Initialize RFAL for NFC-A */
     rfalFieldOnAndStartGT();                                                          /* Turns the Field On and starts GT timer */
-    
+#if 0
     err = rfalNfcaPollerTechnologyDetection( RFAL_COMPLIANCE_MODE_NFC, &sensRes ); /* Poll for NFC-A devices */
     if( err == ERR_NONE )
     {
         gTechsFound |= EXAMPLE_RFAL_POLLER_FOUND_A;
     }
-    
+#endif    
     err = demoPropNfcTechnologyDetection();
     if( err == ERR_NONE )
-    {
+    {// platformLog("detect succ\n");
         gTechsFound |= EXAMPLE_RFAL_POLLER_FOUND_Prop;
     }
+    else
+    {
+         platformLog("detect fail\n");
+    }
+#if 0
     /*******************************************************************************/
     /* NFC-B Technology Detection                                                  */
     /*******************************************************************************/
@@ -525,7 +541,7 @@ static bool exampleRfalPollerTechDetetection( void )
     {
         gTechsFound |= EXAMPLE_RFAL_POLLER_FOUND_V;
     }
-    
+#endif    
     return (gTechsFound != EXAMPLE_RFAL_POLLER_FOUND_NONE);
 }
 
@@ -547,7 +563,7 @@ static bool exampleRfalPollerCollResolution( void )
     uint8_t    devCnt;
     ReturnCode err;
     
-    
+ #if 0     
     /*******************************************************************************/
     /* NFC-A Collision Resolution                                                  */
     /*******************************************************************************/
@@ -568,7 +584,7 @@ static bool exampleRfalPollerCollResolution( void )
             }
         }
     }
-    
+
     /*******************************************************************************/
     /* NFC-B Collision Resolution                                                  */
     /*******************************************************************************/
@@ -632,7 +648,7 @@ static bool exampleRfalPollerCollResolution( void )
             }
         }
     }
-
+#endif
 	/*******************************************************************************/
     /* NFC-Prop Collision Resolution                                                  */
     /*******************************************************************************/
@@ -689,11 +705,12 @@ static bool exampleRfalPollerActivation( uint8_t devIt )
         /*******************************************************************************/
         /* NFC-A Activation                                                            */
         /*******************************************************************************/
-        case EXAMPLE_RFAL_POLLER_TYPE_NFCA:
+        case  EXAMPLE_RFAL_POLLER_TYPE_NFCProp:
             
             rfalNfcaPollerInitialize();
+#if 1
             if( gDevList[devIt].dev.nfca.isSleep )                                    /* Check if desired device is in Sleep      */
-            {
+            {platformLog("NFC-A checkper select \r\n");
                 err = rfalNfcaPollerCheckPresence( RFAL_14443A_SHORTFRAME_CMD_WUPA, &sensRes ); /* Wake up all cards  */
                 if( err != ERR_NONE )
                 {
@@ -706,7 +723,7 @@ static bool exampleRfalPollerActivation( uint8_t devIt )
                     return false;
                 }
             }
-            
+#endif            
             /*******************************************************************************/
             /* Perform protocol specific activation                                        */
             switch( gDevList[devIt].dev.nfca.type )
@@ -732,14 +749,14 @@ static bool exampleRfalPollerActivation( uint8_t devIt )
                 
                 /*******************************************************************************/
                 case RFAL_NFCA_T4T:
-                
+#if 1                
                     /* Perform ISO-DEP (ISO14443-4) activation: RATS and PPS if supported */
                     err = rfalIsoDepPollAHandleActivation( (rfalIsoDepFSxI)RFAL_ISODEP_FSDI_DEFAULT, RFAL_ISODEP_NO_DID, RFAL_BR_424, &gDevList[devIt].proto.isoDep );
                     if( err != ERR_NONE )
                     {
                         return false;
                     }
-                    
+#endif                   
                     platformLog("NFC-A T4T (ISO-DEP) device activated \r\n");         /* NFC-A T4T device activated */
                     
                     gDevList[devIt].rfInterface = EXAMPLE_RFAL_POLLER_INTERFACE_ISODEP;
@@ -908,6 +925,16 @@ static ReturnCode exampleRfalPollerDataExchange( void )
      *  the transfer followed by the check until its completion                    */
     if( gState == EXAMPLE_RFAL_POLLER_STATE_DATAEXCHANGE_START )                      /* Trigger/Start the data exchange */
     {
+#if 0
+        txBuf    = expTransacSelectApp;
+        txBufLen = sizeof(expTransacSelectApp);
+        // platformLog("txBufLen %d \r\n",txBufLen); 
+         /* Trigger a RFAL Transceive using the previous defined frames                 */
+                rfalCreateByteFlagsTxRxContext( ctx, txBuf, txBufLen, gRxBuf.rfRxBuf, sizeof(gRxBuf.rfRxBuf), &gRcvLen, RFAL_TXRX_FLAGS_DEFAULT, rfalConvMsTo1fc(20) );
+                return (((err = rfalStartTransceive( &ctx )) == ERR_NONE) ? ERR_BUSY : err);     /* Signal ERR_BUSY as Data Exchange has been started and is ongoing */
+#endif
+
+#if 1
         switch( gActiveDev->rfInterface )                                             /* Check which RF interface shall be used/has been activated */
         {
             /*******************************************************************************/
@@ -980,8 +1007,8 @@ static ReturnCode exampleRfalPollerDataExchange( void )
                 return (((err = rfalStartTransceive( &ctx )) == ERR_NONE) ? ERR_BUSY : err);     /* Signal ERR_BUSY as Data Exchange has been started and is ongoing */
                 
             case EXAMPLE_RFAL_POLLER_INTERFACE_ISODEP:
-                
-                ST_MEMCPY( gTxBuf.isoDepTxBuf.inf, t4tSelectReq, sizeof(t4tSelectReq) );
+                //platformLog("data send \r\n"); 
+                memcpy( gTxBuf.isoDepTxBuf.inf, t4tSelectReq, sizeof(t4tSelectReq) );
                 
                 isoDepTxRx.DID          = RFAL_ISODEP_NO_DID;
                 isoDepTxRx.ourFSx       = RFAL_ISODEP_FSX_KEEP;
@@ -1021,11 +1048,15 @@ static ReturnCode exampleRfalPollerDataExchange( void )
             default:
                 break;
         }
+#endif
     }
     /*******************************************************************************/
     /* The Data Exchange has been started, wait until completed                    */
     else if( gState == EXAMPLE_RFAL_POLLER_STATE_DATAEXCHANGE_CHECK )
     {
+       //  rfalNfcWorker();
+       // return rfalGetTransceiveStatus();
+ #if 1      
         switch( gActiveDev->rfInterface )
         {
             /*******************************************************************************/
@@ -1044,6 +1075,7 @@ static ReturnCode exampleRfalPollerDataExchange( void )
             default:
                 return ERR_PARAM;
         }
+#endif
     }
     return ERR_REQUEST;
 }

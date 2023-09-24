@@ -52,7 +52,8 @@
 #include "utils.h"
 #include "rfal_nfc.h"
 #include "logger.h"
-//#include "demo_ce.h"
+#include <psa/crypto.h>
+#include <psa/crypto_extra.h>
 LOG_MODULE_DECLARE(st25r3916);
 #if RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE
 #include "demo_ce.h"
@@ -143,6 +144,25 @@ static uint8_t demoEcpVasup[] = { 0x6A,    /* VASUP-A Command             */
 };
 static uint8_t expTransacSelectApp[] = { 0x00, 0xA4, 0x04, 0x00, 0x0c, 0xA0, 0x00, 0x00, 0x08, 0x58, 0x01, 0x01, 0x01, 0x00, 0x00, 0x00, 0x01, 0x00};
 
+//static uint8_t auth0_cmd[] = {}
+
+//uint8_t reader_ePK[64]={0};
+
+static uint8_t reader_group_head[]={0x4d,0x10};
+static uint8_t reader_group_id[8]={0xb0,0x2a,0x52,0x74,0xec,0x02,0x13,0x4d};
+static uint8_t reader_group_sub_id[8];
+
+static uint8_t transaction_id_head[]={0x4c,0x10};
+static uint8_t transaction_id[16];
+static uint8_t auth1_usage[]={0x93,0x04,0x41,0x5d,0x95,0x69};
+
+static uint8_t reader_ePK[65];
+static uint8_t endp_ePK[65];
+static uint8_t m_signature[64];
+static uint8_t m_hash[32];
+static uint8_t datafield[110];//plain text for sign auth1
+static psa_key_handle_t keypair_handle;
+static psa_key_handle_t pub_key_handle;
 /*
 /*
  ******************************************************************************
@@ -161,16 +181,16 @@ static uint8_t              state = DEMO_ST_NOTINIT;
 
 static void demoP2P( rfalNfcDevice *nfcDev );
 static void demoAPDU( void );
-static void demoAPDU1( void );
+static void demoAPDU_apple( void );
 static void demoNfcv( rfalNfcvListenDevice *nfcvDev );
 static void demoNfcf( rfalNfcfListenDevice *nfcfDev );
 static void demoCE( rfalNfcDevice *nfcDev );
 static void demoNotif( rfalNfcState st );
 ReturnCode  demoTransceiveBlocking( uint8_t *txBuf, uint16_t txBufSize, uint8_t **rxBuf, uint16_t **rcvLen, uint32_t fwt );
-
-
+void AUTH0_make();
+void AUTH1_make();
 static ReturnCode demoPropNfcInitialize( void )
-{ //platformLog("propinit\n");
+{ //platformLog("in\n");
     rfalNfcaPollerInitialize();                            /* Initialize RFAL for NFC-A */
     rfalFieldOnAndStartGT();                               /* Turns the Field On and starts GT timer */
 
@@ -182,7 +202,7 @@ static ReturnCode demoPropNfcInitialize( void )
 /*****************************************************************************/
 static ReturnCode demoPropNfcTechnologyDetection( void )
 {
-     //platformLog("!\n");
+     //platformLog("$$\n");
     /* Send VASUP-A */
     rfalTransceiveBlockingTxRx( demoEcpVasup, sizeof(demoEcpVasup), NULL, 0, NULL, RFAL_TXRX_FLAGS_DEFAULT, RFAL_NFCA_FDTMIN );
 
@@ -252,7 +272,7 @@ bool demoIni( void )
         discParam.wakeupEnabled        = false;
         discParam.wakeupConfigDefault  = true;
         discParam.wakeupNPolls         = 1U;
-        discParam.totalDuration        = 1000U;
+        discParam.totalDuration        = 100U;
         discParam.techs2Find           = RFAL_NFC_TECH_NONE;          /* For the demo, enable the NFC Technlogies based on RFAL Feature switches */
 
 
@@ -261,19 +281,19 @@ bool demoIni( void )
 #endif /* RFAL_FEATURE_NFCA */
 
 #if RFAL_FEATURE_NFCB
-        discParam.techs2Find          |= RFAL_NFC_POLL_TECH_B;
+      //  discParam.techs2Find          |= RFAL_NFC_POLL_TECH_B;
 #endif /* RFAL_FEATURE_NFCB */
 
 #if RFAL_FEATURE_NFCF
-        discParam.techs2Find          |= RFAL_NFC_POLL_TECH_F;
+      //  discParam.techs2Find          |= RFAL_NFC_POLL_TECH_F;
 #endif /* RFAL_FEATURE_NFCF */
 
 #if RFAL_FEATURE_NFCV
-        discParam.techs2Find          |= RFAL_NFC_POLL_TECH_V;
+      //  discParam.techs2Find          |= RFAL_NFC_POLL_TECH_V;
 #endif /* RFAL_FEATURE_NFCV */
 
 #if RFAL_FEATURE_ST25TB
-        discParam.techs2Find          |= RFAL_NFC_POLL_TECH_ST25TB;
+      //  discParam.techs2Find          |= RFAL_NFC_POLL_TECH_ST25TB;
 #endif /* RFAL_FEATURE_ST25TB */
         discParam.techs2Find          |= RFAL_NFC_POLL_TECH_PROP;
 #if ST25R95
@@ -281,11 +301,11 @@ bool demoIni( void )
 #endif /* ST25R95 */
 
 #if RFAL_SUPPORT_MODE_POLL_ACTIVE_P2P && RFAL_FEATURE_NFC_DEP
-        discParam.techs2Find |= RFAL_NFC_POLL_TECH_AP2P;
+        //discParam.techs2Find |= RFAL_NFC_POLL_TECH_AP2P;
 #endif /* RFAL_SUPPORT_MODE_POLL_ACTIVE_P2P && RFAL_FEATURE_NFC_DEP */
 
 #if RFAL_SUPPORT_MODE_LISTEN_ACTIVE_P2P && RFAL_FEATURE_NFC_DEP && RFAL_FEATURE_LISTEN_MODE
-        discParam.techs2Find |= RFAL_NFC_LISTEN_TECH_AP2P;
+       // discParam.techs2Find |= RFAL_NFC_LISTEN_TECH_AP2P;
 #endif /* RFAL_SUPPORT_MODE_LISTEN_ACTIVE_P2P && RFAL_FEATURE_NFC_DEP && RFAL_FEATURE_LISTEN_MODE */
 
          ST_MEMSET(&discParam.propNfc, 0x00, sizeof(rfalNfcPropCallbacks) );
@@ -296,7 +316,7 @@ bool demoIni( void )
         discParam.techs2Find           = RFAL_NFC_TECH_NONE;  /* Overwrite any previous poller modes */
 #endif /* DEMO_CARD_EMULATION_ONLY */
 
-#if RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE
+#if RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE & 0
         demoCeInit( ceNFCF_nfcid2 );
     
 #if RFAL_SUPPORT_MODE_LISTEN_NFCA
@@ -318,7 +338,8 @@ bool demoIni( void )
         discParam.techs2Find |= RFAL_NFC_LISTEN_TECH_F;
 #endif /* RFAL_SUPPORT_MODE_LISTEN_NFCF */
 #endif /* RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE */
-
+AUTH0_make();
+AUTH1_make();
         /* Check for valid configuration by calling Discover once */
         err = rfalNfcDiscover( &discParam );
         rfalNfcDeactivate( false );
@@ -402,7 +423,8 @@ void demoCycle( void )
                             case RFAL_NFCA_T4T:
                                 platformLog("NFCA Passive ISO-DEP device found. UID: %s\r\n", hex2str( nfcDevice->nfcid, nfcDevice->nfcidLen ) );
                             
-                               demoAPDU();
+                               //demoAPDU();
+                                demoAPDU_apple();
                                 break;
                             
                             case RFAL_NFCA_T4T_NFCDEP:
@@ -483,12 +505,13 @@ void demoCycle( void )
                     /*******************************************************************************/
                     case RFAL_NFC_POLL_TYPE_NFCA:
                     case RFAL_NFC_POLL_TYPE_NFCF:
-                        
+                        platformLog("poll\n");
                         platformLog("Activated in CE %s mode.\r\n", (nfcDevice->type == RFAL_NFC_POLL_TYPE_NFCA) ? "NFC-A" : "NFC-F");
                         platformLedOn( ((nfcDevice->type == RFAL_NFC_POLL_TYPE_NFCA) ? PLATFORM_LED_A_PORT : PLATFORM_LED_F_PORT), 
                                        ((nfcDevice->type == RFAL_NFC_POLL_TYPE_NFCA) ? PLATFORM_LED_A_PIN  : PLATFORM_LED_F_PIN)  );
                     
-                        demoCE( nfcDevice );
+                       // demoCE( nfcDevice );
+                       demoAPDU_apple();
                         break;
                     
                     /*******************************************************************************/
@@ -753,7 +776,7 @@ void demoAPDU( void )
     }
 #endif /* RFAL_FEATURE_ISO_DEP_POLL */
 }
-void demoAPDU1( void )
+void demoAPDU_apple( void )
 {
  ReturnCode err;
     uint16_t   *rxLen;
@@ -766,6 +789,7 @@ platformLog("apdu send\n");
     {
         /* Here more APDUs to implement the protocol are required. */
         platformLog(" continu...\n");
+        AUTH0_make();
     }
 
 }
@@ -814,4 +838,199 @@ ReturnCode demoTransceiveBlocking( uint8_t *txBuf, uint16_t txBufSize, uint8_t *
     return err;
 }
 
-/************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
+int crypto_finish(void)
+{
+	psa_status_t status;
+
+	/* Destroy the key handle */
+	status = psa_destroy_key(keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_destroy_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+	status = psa_destroy_key(pub_key_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_destroy_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+	return 0;
+}
+int generate_ecdsa_keypair(void)
+{
+	psa_status_t status;
+	size_t olen;
+
+	LOG_INF("Generating random ECDSA keypair...");
+
+	/* Configure the key attributes */
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+	/* Configure the key attributes */
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_SIGN_HASH);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
+	psa_set_key_bits(&key_attributes, 256);
+
+	/* Generate a random keypair. The keypair is not exposed to the application,
+	 * we can use it to signing/verification the key handle.
+	 */
+	status = psa_generate_key(&key_attributes, &keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_generate_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Export the public key */
+	status = psa_export_public_key(keypair_handle, reader_ePK, sizeof(reader_ePK), &olen);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_export_public_key failed! (Error: %d)", status);
+		return -1;
+	}
+    LOG_INF("olen %d %d %d\n",olen,reader_ePK[0],reader_ePK[1]);
+	/* After the key handle is acquired the attributes are not needed */
+	psa_reset_key_attributes(&key_attributes);
+
+
+	return 0;
+}
+void AUTH0_make()
+{
+    psa_status_t status;
+    uint8_t auth0_head[]={0x80,0x80,0x01,0x01,0x6b,0x5c,0x02,0x02,0x00};
+    uint8_t reader_ePK_head[]={0x87,0x41};
+
+
+    uint8_t auth0_end[]={0x00};
+    uint8_t auth0_data[113]={0};
+
+    ReturnCode err;
+    uint16_t   *rxLen;
+    uint8_t    *rxData;
+      platformLog("AUTH0_make start...\n");
+   	/* Initialize PSA Crypto */
+	status = psa_crypto_init();
+	if (status != PSA_SUCCESS)
+		{
+            platformLog("psa_crypto_init failed!\n");
+            return ;
+        }
+
+    status = generate_ecdsa_keypair();
+	if (status != 0) {
+		platformLog("generate_ecdsa_keypair fail");
+		return ;
+	}
+    status = psa_generate_random(transaction_id, sizeof(transaction_id));
+		if (status != PSA_SUCCESS) {
+			platformLog("psa_generate_random failed! (Error: %d)", status);
+			return ;
+		}
+    status = psa_generate_random(reader_group_sub_id, sizeof(reader_group_sub_id));
+		if (status != PSA_SUCCESS) {
+			platformLog("psa_generate_random failed! (Error: %d)", status);
+			return ;
+		}
+    memcpy(auth0_data,auth0_head,sizeof(auth0_head));
+    memcpy(auth0_data+sizeof(auth0_head),reader_ePK_head,sizeof(reader_ePK_head));
+    memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head),reader_ePK,sizeof(reader_ePK));
+    memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK),transaction_id_head,sizeof(transaction_id_head));
+    memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head),transaction_id,sizeof(transaction_id));
+    memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head)+sizeof(transaction_id),reader_group_head,sizeof(reader_group_head));
+    memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(reader_group_head),reader_group_id,sizeof(reader_group_id));
+    memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(reader_group_head)+sizeof(reader_group_id),reader_group_sub_id,sizeof(reader_group_sub_id));
+    memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id),auth0_end,sizeof(auth0_end));
+    printk("--------------------%d\n ",sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(auth0_end));
+    for(int i=0;i<30;i++)
+    {
+        printk("%x ",auth0_data[i]);
+    }
+    printk("-------------------------\n ");
+    for(int i=30;i<60;i++)
+    {
+        printk("%x ",auth0_data[i]);
+    }
+printk("-------------------------\n ");
+    for(int i=60;i<90;i++)
+    {
+        printk("%x ",auth0_data[i]);
+    }
+printk("-------------------------\n ");
+    for(int i=90;i<113;i++)
+    {
+        printk("%x ",auth0_data[i]);
+    }
+printk("-------------------------\n ");
+    /* Exchange APDU: Unified Access APDUs */
+    err = demoTransceiveBlocking( auth0_data, sizeof(auth0_data), &rxData, &rxLen, RFAL_FWT_NONE );
+    if( (err == ERR_NONE) && (*rxLen > 2) && rxData[*rxLen-2] == 0x90 && rxData[*rxLen-1] == 0x00)
+    {
+        /* Here more APDUs to implement the protocol are required. */
+        platformLog(" auth0 succ...\n");
+    }
+    return;
+}
+
+int sign_message(void)
+{
+	uint32_t output_len;
+	psa_status_t status;
+
+	LOG_INF("Signing a message using ECDSA...");
+
+	/* Compute the SHA256 hash*/
+	status = psa_hash_compute(PSA_ALG_SHA_256,
+				  datafield,
+				  sizeof(datafield),
+				  m_hash,
+				  sizeof(m_hash),
+				  &output_len);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_hash_compute failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Sign the hash */
+	status = psa_sign_hash(keypair_handle,
+			       PSA_ALG_ECDSA(PSA_ALG_SHA_256),
+			       m_hash,
+			       sizeof(m_hash),
+			       m_signature,
+			       sizeof(m_signature),
+			       &output_len);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_sign_hash failed! (Error: %d)", status);
+		return -1;
+	}
+
+	LOG_INF("Signing the message successful!");
+crypto_finish();
+	return 0;
+}
+void AUTH1_make()
+{
+    uint8_t auth1_head[]={0x80,0x81,0x00,0x00,0x42};
+    uint8_t reader_sig_head[]={0x9e,0x40};
+    uint8_t reader_sig[64]={0};
+    uint8_t auth1_end[]={0x00};
+
+    uint8_t endp_ePKX_h[]={0x86,0x20};
+    uint8_t reader_ePKX_h[]={0x87,0x20};
+    uint8_t usage[]={0x93,0x04,0x41,0x5d,0x95,0x69};
+    uint8_t endp_ePKX[32];
+    uint8_t reader_ePKX[32];
+    memcpy(datafield,reader_group_head,sizeof(reader_group_head));
+    memcpy(datafield+sizeof(reader_group_head),reader_group_id,sizeof(reader_group_id));
+    memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id),reader_group_sub_id,sizeof(reader_group_sub_id));
+    memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id),endp_ePKX_h,sizeof(endp_ePKX_h));
+    memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h),endp_ePK+1,32);
+    memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32,reader_ePKX_h,sizeof(reader_ePKX_h));
+    memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h),reader_ePK+1,32);
+    memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32,transaction_id_head,sizeof(transaction_id_head));
+    memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head),transaction_id,sizeof(transaction_id));
+    memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id),usage,sizeof(usage));
+    printk("$$$%d",sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(usage));
+    sign_message();
+}   

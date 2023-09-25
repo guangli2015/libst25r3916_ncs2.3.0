@@ -338,8 +338,8 @@ bool demoIni( void )
         discParam.techs2Find |= RFAL_NFC_LISTEN_TECH_F;
 #endif /* RFAL_SUPPORT_MODE_LISTEN_NFCF */
 #endif /* RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE */
-AUTH0_make();
-AUTH1_make();
+//AUTH0_make();
+//AUTH1_make();
         /* Check for valid configuration by calling Discover once */
         err = rfalNfcDiscover( &discParam );
         rfalNfcDeactivate( false );
@@ -790,6 +790,7 @@ platformLog("apdu send\n");
         /* Here more APDUs to implement the protocol are required. */
         platformLog(" continu...\n");
         AUTH0_make();
+        AUTH1_make();
     }
 
 }
@@ -942,6 +943,7 @@ void AUTH0_make()
     memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(reader_group_head),reader_group_id,sizeof(reader_group_id));
     memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(reader_group_head)+sizeof(reader_group_id),reader_group_sub_id,sizeof(reader_group_sub_id));
     memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id),auth0_end,sizeof(auth0_end));
+  #if 0
     printk("--------------------%d\n ",sizeof(auth0_head)+sizeof(reader_ePK_head)+sizeof(reader_ePK)+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(auth0_end));
     for(int i=0;i<30;i++)
     {
@@ -963,13 +965,24 @@ printk("-------------------------\n ");
         printk("%x ",auth0_data[i]);
     }
 printk("-------------------------\n ");
+#endif
     /* Exchange APDU: Unified Access APDUs */
     err = demoTransceiveBlocking( auth0_data, sizeof(auth0_data), &rxData, &rxLen, RFAL_FWT_NONE );
     if( (err == ERR_NONE) && (*rxLen > 2) && rxData[*rxLen-2] == 0x90 && rxData[*rxLen-1] == 0x00)
     {
         /* Here more APDUs to implement the protocol are required. */
-        platformLog(" auth0 succ...\n");
+        platformLog(" auth0 succ...%d\n",*rxLen);
+        if(*rxLen>67)
+        {
+           /* for(int i=2;i<67;i++)
+            {
+                printk("%x ",rxData[i]);
+            }*/
+            memcpy(reader_ePK,rxData+2,65);
+        }
+        printk("!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n ");
     }
+    //crypto_finish();
     return;
 }
 
@@ -1013,14 +1026,17 @@ void AUTH1_make()
 {
     uint8_t auth1_head[]={0x80,0x81,0x00,0x00,0x42};
     uint8_t reader_sig_head[]={0x9e,0x40};
-    uint8_t reader_sig[64]={0};
+    //uint8_t reader_sig[64]={0};
     uint8_t auth1_end[]={0x00};
-
+   uint8_t   auth1_cmd[72];
     uint8_t endp_ePKX_h[]={0x86,0x20};
     uint8_t reader_ePKX_h[]={0x87,0x20};
     uint8_t usage[]={0x93,0x04,0x41,0x5d,0x95,0x69};
     uint8_t endp_ePKX[32];
     uint8_t reader_ePKX[32];
+    ReturnCode err;
+     uint16_t   *rxLen;
+    uint8_t    *rxData;
     memcpy(datafield,reader_group_head,sizeof(reader_group_head));
     memcpy(datafield+sizeof(reader_group_head),reader_group_id,sizeof(reader_group_id));
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id),reader_group_sub_id,sizeof(reader_group_sub_id));
@@ -1031,6 +1047,53 @@ void AUTH1_make()
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32,transaction_id_head,sizeof(transaction_id_head));
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head),transaction_id,sizeof(transaction_id));
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id),usage,sizeof(usage));
-    printk("$$$%d",sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(usage));
+   // printk("$$$%d",sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(usage));
     sign_message();
+
+    memcpy(auth1_cmd,auth1_head,sizeof(auth1_head));
+    memcpy(auth1_cmd+sizeof(auth1_head),reader_sig_head,sizeof(reader_sig_head));
+    memcpy(auth1_cmd+sizeof(auth1_head)+sizeof(reader_sig_head),m_signature,sizeof(m_signature));
+    memcpy(auth1_cmd+sizeof(auth1_head)+sizeof(reader_sig_head)+sizeof(m_signature),auth1_end,sizeof(auth1_end));
+    err = demoTransceiveBlocking( auth1_cmd, sizeof(auth1_cmd), &rxData, &rxLen, RFAL_FWT_NONE );
+    if( (err == ERR_NONE) && (*rxLen > 2) && rxData[*rxLen-2] == 0x90 && rxData[*rxLen-1] == 0x00)
+    {
+        /* Here more APDUs to implement the protocol are required. */
+        platformLog(" err %d\n",err);
+        for(int i=0;i<*rxLen;i++)
+            {
+                platformLog("%x ",rxData[i]);
+            }
+    }else 
+    {   platformLog("err%d\n",err);
+         for(int i=0;i<*rxLen;i++)
+            {
+                platformLog("%x ",rxData[i]);
+            }
+    }
 }   
+#if 1
+int import_ecdsa_pub_key(void)
+{
+	/* Configure the key attributes */
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+	psa_status_t status;
+
+	/* Configure the key attributes */
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_VERIFY_HASH);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_SECP_R1));
+	psa_set_key_bits(&key_attributes, 256);
+
+	status = psa_import_key(&key_attributes, m_pub_key, sizeof(m_pub_key), &pub_key_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_import_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* After the key handle is acquired the attributes are not needed */
+	psa_reset_key_attributes(&key_attributes);
+
+	return 0;
+}
+#endif

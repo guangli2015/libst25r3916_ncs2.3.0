@@ -162,7 +162,8 @@ static uint8_t m_signature[64];
 static uint8_t m_hash[32];
 static uint8_t datafield[110];//plain text for sign auth1
 static psa_key_handle_t keypair_handle;
-static psa_key_handle_t pub_key_handle;
+static psa_key_handle_t auth1_keypair_handle;
+uint8_t reader_PK[32];
 /*
 /*
  ******************************************************************************
@@ -189,6 +190,7 @@ static void demoNotif( rfalNfcState st );
 ReturnCode  demoTransceiveBlocking( uint8_t *txBuf, uint16_t txBufSize, uint8_t **rxBuf, uint16_t **rcvLen, uint32_t fwt );
 void AUTH0_make();
 void AUTH1_make();
+int import_ecdsa_prv_key(void);
 static ReturnCode demoPropNfcInitialize( void )
 { //platformLog("in\n");
     rfalNfcaPollerInitialize();                            /* Initialize RFAL for NFC-A */
@@ -850,7 +852,7 @@ int crypto_finish(void)
 		return -1;
 	}
 
-	status = psa_destroy_key(pub_key_handle);
+	status = psa_destroy_key(auth1_keypair_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_destroy_key failed! (Error: %d)", status);
 		return -1;
@@ -1006,7 +1008,7 @@ int sign_message(void)
 	}
 
 	/* Sign the hash */
-	status = psa_sign_hash(keypair_handle,
+	status = psa_sign_hash(auth1_keypair_handle,
 			       PSA_ALG_ECDSA(PSA_ALG_SHA_256),
 			       m_hash,
 			       sizeof(m_hash),
@@ -1048,6 +1050,7 @@ void AUTH1_make()
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head),transaction_id,sizeof(transaction_id));
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id),usage,sizeof(usage));
    // printk("$$$%d",sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(usage));
+   import_ecdsa_prv_key();
     sign_message();
 
     memcpy(auth1_cmd,auth1_head,sizeof(auth1_head));
@@ -1072,7 +1075,7 @@ void AUTH1_make()
     }
 }   
 #if 1
-int import_ecdsa_pub_key(void)
+int import_ecdsa_prv_key(void)
 {
 	/* Configure the key attributes */
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -1082,10 +1085,10 @@ int import_ecdsa_pub_key(void)
 	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_VERIFY_HASH);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
 	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
-	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_SECP_R1));
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
 	psa_set_key_bits(&key_attributes, 256);
 
-	status = psa_import_key(&key_attributes, m_pub_key, sizeof(m_pub_key), &pub_key_handle);
+	status = psa_import_key(&key_attributes, reader_PK, sizeof(reader_PK), &auth1_keypair_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_import_key failed! (Error: %d)", status);
 		return -1;

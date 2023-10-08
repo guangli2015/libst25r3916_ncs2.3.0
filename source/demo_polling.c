@@ -344,10 +344,10 @@ bool demoIni( void )
 #endif /* RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE */
 //AUTH0_make();
 //AUTH1_make();
-import_ecdsa_prv_key();
-import_ecdsa_pub_key();
-sign_message();
-verify_message();
+//import_ecdsa_prv_key();
+//import_ecdsa_pub_key();
+//sign_message();
+//verify_message();
         /* Check for valid configuration by calling Discover once */
         err = rfalNfcDiscover( &discParam );
         rfalNfcDeactivate( false );
@@ -444,8 +444,8 @@ void demoCycle( void )
                                 
                             default:
                                 platformLog("ISO14443A/NFC-A card found. UID: %s\r\n", hex2str( nfcDevice->nfcid, nfcDevice->nfcidLen ) );
-                                import_ecdsa_prv_key();
-                                sign_message();
+                                //import_ecdsa_prv_key();
+                                //sign_message();
                                 break;
                         }
                         break;
@@ -791,13 +791,19 @@ void demoAPDU_apple( void )
  ReturnCode err;
     uint16_t   *rxLen;
     uint8_t    *rxData;
-platformLog("apdu send\n");
+//platformLog("apdu send\n");
     /* Exchange APDU: Unified Access APDUs */
     err = demoTransceiveBlocking( expTransacSelectApp, sizeof(expTransacSelectApp), &rxData, &rxLen, RFAL_FWT_NONE );
- platformLog(" err:%d\n",err);
+ //platformLog(" err:%d\n",err);
     if( (err == ERR_NONE) && (*rxLen > 2) && rxData[*rxLen-2] == 0x90 && rxData[*rxLen-1] == 0x00)
     {
+         printk("~~~~~~~~");
         /* Here more APDUs to implement the protocol are required. */
+        for(int i=0;i<*rxLen;i++)
+        {
+          printk(" %x ",rxData[i]);
+        }
+         printk("~~~~~~~~");
         platformLog(" continu...\n");
         AUTH0_make();
         AUTH1_make();
@@ -984,13 +990,15 @@ printk("-------------------------\n ");
         platformLog(" auth0 succ...%d\n",*rxLen);
         if(*rxLen>67)
         {
-           /* for(int i=2;i<67;i++)
+            /*for(int i=0;i<*rxLen;i++)
             {
                 printk("%x ",rxData[i]);
             }*/
-            memcpy(reader_ePK,rxData+2,65);
+            memcpy(endp_ePK,rxData+2,65);
+            printk("!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n ");
+
         }
-        printk("!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n ");
+       
     }
     //crypto_finish();
     return;
@@ -1029,7 +1037,7 @@ int sign_message(void)
 	}
 
 	LOG_INF("Signing the message successful!");
-//crypto_finish();
+    
 	return 0;
 }
 void AUTH1_make()
@@ -1057,19 +1065,20 @@ void AUTH1_make()
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32,transaction_id_head,sizeof(transaction_id_head));
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head),transaction_id,sizeof(transaction_id));
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id),usage,sizeof(usage));
-   // printk("$$$%d",sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(usage));
+    printk("$$$%d",sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id)+sizeof(usage));
    import_ecdsa_prv_key();
     sign_message();
-#if 0
+#if 1
     memcpy(auth1_cmd,auth1_head,sizeof(auth1_head));
     memcpy(auth1_cmd+sizeof(auth1_head),reader_sig_head,sizeof(reader_sig_head));
     memcpy(auth1_cmd+sizeof(auth1_head)+sizeof(reader_sig_head),m_signature,sizeof(m_signature));
     memcpy(auth1_cmd+sizeof(auth1_head)+sizeof(reader_sig_head)+sizeof(m_signature),auth1_end,sizeof(auth1_end));
+    printk("***%d",sizeof(auth1_head)+sizeof(reader_sig_head)+sizeof(m_signature)+sizeof(auth1_end));
     err = demoTransceiveBlocking( auth1_cmd, sizeof(auth1_cmd), &rxData, &rxLen, RFAL_FWT_NONE );
     if( (err == ERR_NONE) && (*rxLen > 2) && rxData[*rxLen-2] == 0x90 && rxData[*rxLen-1] == 0x00)
     {
         /* Here more APDUs to implement the protocol are required. */
-        platformLog(" err %d\n",err);
+        platformLog(" err 0\n");
         for(int i=0;i<*rxLen;i++)
             {
                 platformLog("%x ",rxData[i]);
@@ -1081,27 +1090,30 @@ void AUTH1_make()
                 platformLog("%x ",rxData[i]);
             }
     }
+    import_ecdsa_pub_key();
+    verify_message();
+    crypto_finish();
 #endif
 }   
-#if 1
+
 static uint8_t m_pub_key[65];//for test
 int import_ecdsa_prv_key(void)
 {
 	/* Configure the key attributes */
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_status_t status;
-    	status = psa_crypto_init();
+ /* 	status = psa_crypto_init();
 	if (status != PSA_SUCCESS)
 		{
             platformLog("psa_crypto_init failed!\n");
             return ;
-        }
+        } 
      printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n ");
   for(int i=0;i<32;i++)
             {
                 printk("%x ",reader_SK[i]);
             }
-              printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n ");
+              printk("@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@\n ");*/ 
 	/* Configure the key attributes */
 	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_VERIFY_HASH);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
@@ -1112,14 +1124,14 @@ int import_ecdsa_prv_key(void)
 	status = psa_import_key(&key_attributes, reader_SK, sizeof(reader_SK), &auth1_keypair_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_import_key failed! (Error: %d)", status);
-        psa_destroy_key(auth1_keypair_handle);
+        //psa_destroy_key(auth1_keypair_handle);
 		return -1;
 	}
     size_t olen;
     /* Export the public key */
 	status = psa_export_public_key(auth1_keypair_handle, m_pub_key, sizeof(m_pub_key), &olen);
 	if (status != PSA_SUCCESS) {
-        psa_destroy_key(auth1_keypair_handle);
+       // psa_destroy_key(auth1_keypair_handle);
 		LOG_INF("psa_export_public_key failed! (Error: %d)", status);
 		return -1;
 	}
@@ -1128,13 +1140,24 @@ int import_ecdsa_prv_key(void)
 
 	return 0;
 }
+#if 1
 static psa_key_handle_t pub_key_handle;
 int import_ecdsa_pub_key(void)
 {
 	/* Configure the key attributes */
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 	psa_status_t status;
-
+ /*  printk("$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n ");
+  for(int i=0;i<32;i++)
+            {
+                printk("%x ",m_pub_key[i]);
+            }
+              printk("$$$\n ");
+              for(int i=32;i<64;i++)
+            {
+                printk("%x ",m_pub_key[i]);
+            }
+             printk("$$$\n ");*/
 	/* Configure the key attributes */
 	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_VERIFY_HASH);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
@@ -1159,7 +1182,7 @@ int verify_message(void)
 	psa_status_t status;
 
 	LOG_INF("Verifying ECDSA signature...");
-m_signature[0]=88;
+
 	/* Verify the signature of the hash */
 	status = psa_verify_hash(pub_key_handle,
 				 PSA_ALG_ECDSA(PSA_ALG_SHA_256),
@@ -1169,12 +1192,25 @@ m_signature[0]=88;
 				 sizeof(m_signature));
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_verify_hash failed! (Error: %d)", status);
-        crypto_finish();
+        //crypto_finish();
+       
+
+	    /* Destroy the key handle */
+	    status = psa_destroy_key(pub_key_handle);
+	    if (status != PSA_SUCCESS) {
+		    LOG_INF("psa_destroy_key failed! (Error: %d)", status);
+		    return -1;
+	    }
 		return -1;
 	}
 
 	LOG_INF("Signature verification was successful!");
-crypto_finish();
+     /* Destroy the key handle */
+	    status = psa_destroy_key(pub_key_handle);
+	    if (status != PSA_SUCCESS) {
+		    LOG_INF("psa_destroy_key failed! (Error: %d)", status);
+		    return -1;
+	    }
 	return 0;
 }
 #endif

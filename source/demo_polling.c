@@ -163,7 +163,13 @@ static uint8_t m_hash[32];
 static uint8_t datafield[110];//plain text for sign auth1
 static psa_key_handle_t keypair_handle;
 static psa_key_handle_t auth1_keypair_handle;
+static psa_key_handle_t ecdh_keypair_handle;
+static psa_key_handle_t hkdf_in_keypair_handle;
+static psa_key_handle_t hkdf_out_keypair_handle;
 uint8_t reader_SK[32]={0x90, 0x05, 0x89, 0x42, 0x0E, 0xB2, 0xBE, 0xB0, 0xBD, 0xD1, 0x33, 0xB6, 0xD7, 0x67, 0x46, 0x98, 0xF1, 0x8E, 0xE6, 0x39, 0xEA, 0x9B, 0xAA, 0xD5, 0x76, 0x29, 0xCE, 0x46, 0xB8, 0x4F, 0xB4, 0xBA};
+static uint8_t reader_eSK[32]={0};
+static uint8_t s_secret[32]={0};
+
 /*
 /*
  ******************************************************************************
@@ -193,6 +199,12 @@ void AUTH1_make();
 int import_ecdsa_prv_key(void);
 int import_ecdsa_pub_key(void);
 int verify_message(void);
+static int create_ecdh_keypair(psa_key_handle_t *key_handle);
+static int calculate_ecdh_secret(psa_key_handle_t *key_handle,
+			  uint8_t *pub_key,
+			  size_t pub_key_len,
+			  uint8_t *secret,
+			  size_t secret_len);
 static ReturnCode demoPropNfcInitialize( void )
 { //platformLog("in\n");
     rfalNfcaPollerInitialize();                            /* Initialize RFAL for NFC-A */
@@ -342,7 +354,7 @@ bool demoIni( void )
         discParam.techs2Find |= RFAL_NFC_LISTEN_TECH_F;
 #endif /* RFAL_SUPPORT_MODE_LISTEN_NFCF */
 #endif /* RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE */
-//AUTH0_make();
+AUTH0_make();
 //AUTH1_make();
 //import_ecdsa_prv_key();
 //import_ecdsa_pub_key();
@@ -874,7 +886,7 @@ int crypto_finish(void)
 
 	return 0;
 }
-int generate_ecdsa_keypair(void)
+static int generate_ephem_keypair(void)
 {
 	psa_status_t status;
 	size_t olen;
@@ -885,7 +897,7 @@ int generate_ecdsa_keypair(void)
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
 
 	/* Configure the key attributes */
-	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_SIGN_HASH);
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_SIGN_HASH | PSA_KEY_USAGE_EXPORT);
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
 	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
 	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
@@ -907,6 +919,13 @@ int generate_ecdsa_keypair(void)
 		return -1;
 	}
     LOG_INF("olen %d %d %d\n",olen,reader_ePK[0],reader_ePK[1]);
+
+    status = psa_export_key(keypair_handle, reader_eSK, sizeof(reader_eSK), &olen);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_export_prv_key failed! (Error: %d)", status);
+		return -1;
+	}
+    LOG_INF("olen %d %d %d\n",olen,reader_eSK[0],reader_eSK[1]);
 	/* After the key handle is acquired the attributes are not needed */
 	psa_reset_key_attributes(&key_attributes);
 
@@ -935,7 +954,7 @@ void AUTH0_make()
             return ;
         }
 
-    status = generate_ecdsa_keypair();
+    status = generate_ephem_keypair();
 	if (status != 0) {
 		platformLog("generate_ecdsa_keypair fail");
 		return ;
@@ -1090,8 +1109,44 @@ void AUTH1_make()
                 platformLog("%x ",rxData[i]);
             }
     }
-    import_ecdsa_pub_key();
-    verify_message();
+//    import_ecdsa_pub_key();
+//    verify_message();
+    
+    create_ecdh_keypair(&ecdh_keypair_handle);
+     calculate_ecdh_secret(&ecdh_keypair_handle,
+				       endp_ePK,
+				       sizeof(endp_ePK),
+				       s_secret,
+				       sizeof(s_secret));
+    uint8_t kdh_input[32+4+16];
+    uint8_t tmp[4]={0x00,0x00,0x00,0x01};
+    memcpy(kdh_input,s_secret,sizeof(s_secret));
+    memcpy(kdh_input+sizeof(s_secret),tmp,sizeof(tmp));
+    memcpy(kdh_input+sizeof(s_secret)+sizeof(tmp),transaction_id,sizeof(transaction_id));
+    
+    uint32_t output_len;
+	psa_status_t status;
+     uint8_t d_kdh[32];
+	/* Compute the SHA256 hash*/
+	status = psa_hash_compute(PSA_ALG_SHA_256,
+				  kdh_input,
+				  sizeof(kdh_input),
+				  d_kdh,
+				  sizeof(d_kdh),
+				  &output_len);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_hash_compute failed! (Error: %d)", status);
+	}
+    
+    uint8_t auth1_hkdf_info_48[101];
+    uint8_t interface_to_end[]={0x5E ,0x01 ,0x01 ,0x56 ,0x6F ,0x6C ,0x61 ,0x74 ,0x69 ,0x6C ,0x65 ,0x5C ,0x02 ,0x02 ,0x00 ,0x5C ,0x04 ,0x02 ,0x00 ,0x01 ,0x00 };
+    memcpy(auth1_hkdf_info_48,reader_ePK+1,32);
+    memcpy(auth1_hkdf_info_48+32,endp_ePK+1,32);
+    memcpy(auth1_hkdf_info_48+32+32,transaction_id,sizeof(transaction_id));
+    memcpy(auth1_hkdf_info_48+32+32+sizeof(transaction_id),interface_to_end,sizeof(interface_to_end));
+
+    import_hkdf_input_key(d_kdh);
+    derive_hkdf(48,auth1_hkdf_info_48);
     crypto_finish();
 #endif
 }   
@@ -1140,7 +1195,7 @@ int import_ecdsa_prv_key(void)
 
 	return 0;
 }
-#if 1
+#if 0
 static psa_key_handle_t pub_key_handle;
 int import_ecdsa_pub_key(void)
 {
@@ -1214,3 +1269,153 @@ int verify_message(void)
 	return 0;
 }
 #endif
+static int create_ecdh_keypair(psa_key_handle_t *key_handle)
+{
+	psa_status_t status;
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+	/* Crypto settings for ECDH using the SHA256 hashing algorithm,
+	 * the secp256r1 curve
+	 */
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDH);
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
+	psa_set_key_bits(&key_attributes, 256);
+
+	/* Generate a key pair */
+	//status = psa_generate_key(&key_attributes, key_handle);
+	status = psa_import_key(&key_attributes,reader_eSK,sizeof(reader_eSK), key_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_generate_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+	psa_reset_key_attributes(&key_attributes);
+
+	LOG_INF("ECDH keypair import successfully!");
+
+	return 0;
+}
+
+static int calculate_ecdh_secret(psa_key_handle_t *key_handle,
+			  uint8_t *pub_key,
+			  size_t pub_key_len,
+			  uint8_t *secret,
+			  size_t secret_len)
+{
+	uint32_t output_len;
+	psa_status_t status;
+
+	/* Perform the ECDH key exchange to calculate the secret */
+	status = psa_raw_key_agreement(
+		PSA_ALG_ECDH, *key_handle, pub_key, pub_key_len, secret, secret_len, &output_len);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_raw_key_agreement failed! (Error: %d)", status);
+		return -1;
+	}
+
+	LOG_INF("ECDH secret calculated successfully!");
+
+	return 0;
+}
+
+static int import_hkdf_input_key(uint8_t *kdh)
+{
+	psa_status_t status;
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+	/* Configure the input key attributes */
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_DERIVE);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_HKDF(PSA_ALG_SHA_256));
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_DERIVE);
+	psa_set_key_bits(&key_attributes,
+			 32 * 8);
+
+	/* Import the master key into the keystore */
+	status = psa_import_key(&key_attributes,
+				kdh,
+				sizeof(kdh),
+				&hkdf_in_keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_import_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+	return 0;
+}
+
+static int derive_hkdf(uint8_t out_key_size,uint8_t * m_ainfo )
+{
+	psa_status_t status;
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+	psa_key_derivation_operation_t operation =
+		PSA_KEY_DERIVATION_OPERATION_INIT;
+
+	LOG_INF("Deriving a key using HKDF and SHA256...");
+
+	/* Derived key settings
+	 * WARNING: This key usage makes the key exportable which is not safe and
+	 * is only done to demonstrate the validity of the results. Please do not use
+	 * this in production environments.
+	 */
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_RAW_DATA);
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_EXPORT); /* DONT USE IN PRODUCTION */
+	psa_set_key_bits(&key_attributes, out_key_size * 8);
+
+	/* Set the derivation algorithm */
+	status = psa_key_derivation_setup(&operation,
+					  PSA_ALG_HKDF(PSA_ALG_SHA_256));
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_key_derivation_setup failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Set the salt for the operation 
+	status = psa_key_derivation_input_bytes(&operation,
+						PSA_KEY_DERIVATION_INPUT_SALT,
+						m_salt,
+						sizeof(m_salt));
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_key_derivation_input_bytes failed! (Error: %d)", status);
+		return APP_ERROR;
+	}*/
+
+	/* Set the master key for the operation */
+	status = psa_key_derivation_input_key(
+		&operation, PSA_KEY_DERIVATION_INPUT_SECRET, hkdf_in_keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_key_derivation_input_key failed! (Error: %d)", status);
+		return -1;
+	}
+LOG_INF("sizeof m_ainfo %d\n",sizeof(m_ainfo));
+	/* Set the additional info for the operation */
+	status = psa_key_derivation_input_bytes(&operation,
+						PSA_KEY_DERIVATION_INPUT_INFO,
+						m_ainfo,
+						sizeof(m_ainfo));
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_key_derivation_input_bytes failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Store the derived key in the keystore slot pointed by out_key_handle */
+	status = psa_key_derivation_output_key(&key_attributes, &operation, &hkdf_out_keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_key_derivation_output_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Clean up the context */
+	status = psa_key_derivation_abort(&operation);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_key_derivation_abort failed! (Error: %d)", status);
+		return -1;
+	}
+
+	LOG_INF("Key derivation successful!");
+
+	return 0;
+}

@@ -205,6 +205,8 @@ static int calculate_ecdh_secret(psa_key_handle_t *key_handle,
 			  size_t pub_key_len,
 			  uint8_t *secret,
 			  size_t secret_len);
+static int import_hkdf_input_key(uint8_t *kdh);
+static int derive_hkdf(uint8_t out_key_size,uint8_t * m_ainfo );
 static ReturnCode demoPropNfcInitialize( void )
 { //platformLog("in\n");
     rfalNfcaPollerInitialize();                            /* Initialize RFAL for NFC-A */
@@ -1138,15 +1140,38 @@ void AUTH1_make()
 		LOG_INF("psa_hash_compute failed! (Error: %d)", status);
 	}
     
+    uint8_t hkdf_output_key48[48];
     uint8_t auth1_hkdf_info_48[101];
-    uint8_t interface_to_end[]={0x5E ,0x01 ,0x01 ,0x56 ,0x6F ,0x6C ,0x61 ,0x74 ,0x69 ,0x6C ,0x65 ,0x5C ,0x02 ,0x02 ,0x00 ,0x5C ,0x04 ,0x02 ,0x00 ,0x01 ,0x00 };
+    uint8_t interface_to_end_48[]={0x5E ,0x01 ,0x01 ,0x56 ,0x6F ,0x6C ,0x61 ,0x74 ,0x69 ,0x6C ,0x65 ,0x5C ,0x02 ,0x02 ,0x00 ,0x5C ,0x04 ,0x02 ,0x00 ,0x01 ,0x00 };
     memcpy(auth1_hkdf_info_48,reader_ePK+1,32);
     memcpy(auth1_hkdf_info_48+32,endp_ePK+1,32);
     memcpy(auth1_hkdf_info_48+32+32,transaction_id,sizeof(transaction_id));
-    memcpy(auth1_hkdf_info_48+32+32+sizeof(transaction_id),interface_to_end,sizeof(interface_to_end));
+    memcpy(auth1_hkdf_info_48+32+32+sizeof(transaction_id),interface_to_end_48,sizeof(interface_to_end_48));
 
     import_hkdf_input_key(d_kdh);
-    derive_hkdf(48,auth1_hkdf_info_48);
+    derive_hkdf(48,auth1_hkdf_info_48,sizeof(auth1_hkdf_info_48));
+    size_t olen;
+    /* Export the generated key content to verify it's value */
+	status = psa_export_key(hkdf_out_keypair_handle, hkdf_output_key48, sizeof(hkdf_output_key48), &olen);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_export_key failed! (Error: %d)", status);
+		
+	}
+
+    uint8_t kPersistent[32];
+    uint8_t auth1_hkdf_info_32[103];
+    uint8_t interface_to_end_32[]={0x5E ,0x01 ,0x01 ,0x50 ,0x65 ,0x72 ,0x73 ,0x69 ,0x73 ,0x74 ,0x65 , 0x6e ,0x74 ,0x5C ,0x02 ,0x02 ,0x00 ,0x5C ,0x04 ,0x02 ,0x00 ,0x01 ,0x00 };
+    memcpy(auth1_hkdf_info_32,reader_ePK+1,32);
+    memcpy(auth1_hkdf_info_32+32,endp_ePK+1,32);
+    memcpy(auth1_hkdf_info_32+32+32,transaction_id,sizeof(transaction_id));
+    memcpy(auth1_hkdf_info_32+32+32+sizeof(transaction_id),interface_to_end_32,sizeof(interface_to_end_32));
+    derive_hkdf(32,auth1_hkdf_info_32,sizeof(auth1_hkdf_info_32));
+     /* Export the generated key content to verify it's value */
+	status = psa_export_key(hkdf_out_keypair_handle, kPersistent, sizeof(kPersistent), &olen);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_export_key failed! (Error: %d)", status);
+		
+	}
     crypto_finish();
 #endif
 }   
@@ -1336,7 +1361,7 @@ static int import_hkdf_input_key(uint8_t *kdh)
 	/* Import the master key into the keystore */
 	status = psa_import_key(&key_attributes,
 				kdh,
-				sizeof(kdh),
+				32,
 				&hkdf_in_keypair_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_import_key failed! (Error: %d)", status);
@@ -1346,7 +1371,7 @@ static int import_hkdf_input_key(uint8_t *kdh)
 	return 0;
 }
 
-static int derive_hkdf(uint8_t out_key_size,uint8_t * m_ainfo )
+static int derive_hkdf(uint8_t out_key_size,uint8_t * m_ainfo , uint8_t info_len)
 {
 	psa_status_t status;
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -1390,12 +1415,12 @@ static int derive_hkdf(uint8_t out_key_size,uint8_t * m_ainfo )
 		LOG_INF("psa_key_derivation_input_key failed! (Error: %d)", status);
 		return -1;
 	}
-LOG_INF("sizeof m_ainfo %d\n",sizeof(m_ainfo));
+//LOG_INF("sizeof m_ainfo %d\n",sizeof(m_ainfo));
 	/* Set the additional info for the operation */
 	status = psa_key_derivation_input_bytes(&operation,
 						PSA_KEY_DERIVATION_INPUT_INFO,
 						m_ainfo,
-						sizeof(m_ainfo));
+						info_len);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_key_derivation_input_bytes failed! (Error: %d)", status);
 		return -1;

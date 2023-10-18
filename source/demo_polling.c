@@ -166,9 +166,12 @@ static psa_key_handle_t auth1_keypair_handle;
 static psa_key_handle_t ecdh_keypair_handle;
 static psa_key_handle_t hkdf_in_keypair_handle;
 static psa_key_handle_t hkdf_out_keypair_handle;
+static psa_key_handle_t aes_keypair_handle;
+static psa_key_handle_t endp_pub_key_handle;
 uint8_t reader_SK[32]={0x90, 0x05, 0x89, 0x42, 0x0E, 0xB2, 0xBE, 0xB0, 0xBD, 0xD1, 0x33, 0xB6, 0xD7, 0x67, 0x46, 0x98, 0xF1, 0x8E, 0xE6, 0x39, 0xEA, 0x9B, 0xAA, 0xD5, 0x76, 0x29, 0xCE, 0x46, 0xB8, 0x4F, 0xB4, 0xBA};
 static uint8_t reader_eSK[32]={0};
 static uint8_t s_secret[32]={0};
+static uint8_t endp_pub_key[65];
 
 /*
 /*
@@ -196,9 +199,9 @@ static void demoNotif( rfalNfcState st );
 ReturnCode  demoTransceiveBlocking( uint8_t *txBuf, uint16_t txBufSize, uint8_t **rxBuf, uint16_t **rcvLen, uint32_t fwt );
 void AUTH0_make();
 void AUTH1_make();
-int import_ecdsa_prv_key(void);
-int import_ecdsa_pub_key(void);
-int verify_message(void);
+static int import_ecdsa_prv_key(void);
+//static int import_ecdsa_pub_key(void);
+//static int verify_message(void);
 static int create_ecdh_keypair(psa_key_handle_t *key_handle);
 static int calculate_ecdh_secret(psa_key_handle_t *key_handle,
 			  uint8_t *pub_key,
@@ -206,7 +209,11 @@ static int calculate_ecdh_secret(psa_key_handle_t *key_handle,
 			  uint8_t *secret,
 			  size_t secret_len);
 static int import_hkdf_input_key(uint8_t *kdh);
-static int derive_hkdf(uint8_t out_key_size,uint8_t * m_ainfo );
+static int derive_hkdf(size_t out_key_size,uint8_t * m_ainfo , size_t info_len);
+static int aes_import_key(uint8_t * kenc);
+static int decrypt_cbc_aes(uint8_t * m_encrypted_text,size_t en_size,uint8_t *m_decrypted_text ,size_t de_size,uint8_t * m_iv);
+static int import_ecdsa_pub_key(void);
+static int verify_endp_message(void);
 static ReturnCode demoPropNfcInitialize( void )
 { //platformLog("in\n");
     rfalNfcaPollerInitialize();                            /* Initialize RFAL for NFC-A */
@@ -886,6 +893,35 @@ int crypto_finish(void)
 		return -1;
 	}
 
+    status = psa_destroy_key(ecdh_keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_destroy_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+    status = psa_destroy_key(hkdf_in_keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_destroy_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+    status = psa_destroy_key(hkdf_out_keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_destroy_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+    status = psa_destroy_key(aes_keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_destroy_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+     status = psa_destroy_key(endp_pub_key_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_destroy_key failed! (Error: %d)", status);
+		return -1;
+	}
 	return 0;
 }
 static int generate_ephem_keypair(void)
@@ -1172,12 +1208,21 @@ void AUTH1_make()
 		LOG_INF("psa_export_key failed! (Error: %d)", status);
 		
 	}
+
+    uint8_t m_iv[16]={0xCB ,0x63 ,0xDE ,0xB0 ,0x19 ,0xCC ,0x83 ,0x7C ,0x05 ,0x1E ,0x83 ,0x16 ,0xF4 ,0xF2 ,0x07 ,0x46};
+    uint8_t m_decrypted_text[133]={0};
+    aes_import_key(hkdf_output_key48);
+    decrypt_cbc_aes(rxData,(*rxLen)-10,m_decrypted_text ,(*rxLen)-10,m_iv);
+
+    uint8_t endp_usage[]={0x93,0x04,0x4e,0x88,0x7b,0x4c};
+    memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id),endp_usage,sizeof(endp_usage));
+
     crypto_finish();
 #endif
 }   
 
 static uint8_t m_pub_key[65];//for test
-int import_ecdsa_prv_key(void)
+static int import_ecdsa_prv_key(void)
 {
 	/* Configure the key attributes */
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -1371,7 +1416,7 @@ static int import_hkdf_input_key(uint8_t *kdh)
 	return 0;
 }
 
-static int derive_hkdf(uint8_t out_key_size,uint8_t * m_ainfo , uint8_t info_len)
+static int derive_hkdf(size_t out_key_size,uint8_t * m_ainfo , size_t info_len)
 {
 	psa_status_t status;
 	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
@@ -1442,5 +1487,220 @@ static int derive_hkdf(uint8_t out_key_size,uint8_t * m_ainfo , uint8_t info_len
 
 	LOG_INF("Key derivation successful!");
 
+	return 0;
+}
+
+
+static int aes_import_key(uint8_t * kenc)
+{
+	psa_status_t status;
+
+	LOG_INF("Generating random AES key...");
+
+	/* Configure the key attributes */
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_ENCRYPT | PSA_KEY_USAGE_DECRYPT);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_CBC_NO_PADDING);
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_AES);
+	psa_set_key_bits(&key_attributes, 128);
+
+	/* Generate a random key. The key is not exposed to the application,
+	 * we can use it to encrypt/decrypt using the key handle
+	 */
+	//status = psa_generate_key(&key_attributes, &key_handle);
+	status = psa_import_key(&key_attributes, kenc, 16, &aes_keypair_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_generate_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* After the key handle is acquired the attributes are not needed */
+	psa_reset_key_attributes(&key_attributes);
+
+	LOG_INF("AES key generated successfully!");
+
+	return 0;
+}
+
+static int decrypt_cbc_aes(uint8_t * m_encrypted_text,size_t en_size,uint8_t *m_decrypted_text ,size_t de_size,uint8_t * m_iv)
+{
+	uint32_t olen;
+	psa_status_t status;
+	psa_cipher_operation_t operation = PSA_CIPHER_OPERATION_INIT;
+
+	LOG_INF("Decrypting using AES CBC MODE...");
+
+	/* Setup the decryption operation */
+	status = psa_cipher_decrypt_setup(&operation, aes_keypair_handle, PSA_ALG_CBC_NO_PADDING);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_cipher_decrypt_setup failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Set the IV generated in encryption */
+	status = psa_cipher_set_iv(&operation, m_iv, 16);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_cipher_set_iv failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Perform the decryption */
+	status = psa_cipher_update(&operation, m_encrypted_text,
+				  en_size, m_decrypted_text,
+				   de_size, &olen);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_cipher_update failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Finalize the decryption */
+	status = psa_cipher_finish(&operation, m_decrypted_text + olen,
+				   de_size - olen,
+				   &olen);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_cipher_finish failed! (Error: %d)", status);
+		return -1;
+	}
+
+	//PRINT_HEX("Decrypted text", m_decrypted_text, sizeof(m_decrypted_text));
+
+	/* Check the validity of the decryption 
+	if (memcmp(m_decrypted_text,
+				m_plain_text,
+				NRF_CRYPTO_EXAMPLE_AES_MAX_TEXT_SIZE) != 0){
+
+		LOG_INF("Error: Decrypted text doesn't match the plaintext");
+		return APP_ERROR;
+	}*/
+
+	LOG_INF("Decryption successful!");
+
+	/*  Clean up cipher operation context */
+	psa_cipher_abort(&operation);
+
+	return 0;
+}
+
+static int encrypt_cbc_aes(uint8_t * m_encrypted_text,size_t en_size,uint8_t *m_plain_text ,size_t pl_size,uint8_t * m_iv)
+{
+	uint32_t olen;
+	psa_status_t status;
+	psa_cipher_operation_t operation = PSA_CIPHER_OPERATION_INIT;
+
+	LOG_INF("Encrypting using AES CBC MODE...");
+
+	/* Setup the encryption operation */
+	status = psa_cipher_encrypt_setup(&operation, aes_keypair_handle, PSA_ALG_CBC_NO_PADDING);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_cipher_encrypt_setup failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Generate an IV */
+	//status = psa_cipher_generate_iv(&operation, m_iv, sizeof(m_iv), &olen);
+	status = psa_cipher_set_iv(&operation, m_iv, 16);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_cipher_generate_iv failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Perform the encryption */
+	status = psa_cipher_update(&operation, m_plain_text,
+				   pl_size, m_encrypted_text,
+				   en_size, &olen);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_cipher_update failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Finalize the encryption */
+	status = psa_cipher_finish(&operation, m_encrypted_text + olen,
+				   en_size - olen,
+				   &olen);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_cipher_finish failed! (Error: %d)", status);
+		return -1;
+	}
+
+	LOG_INF("Encryption successful!");
+	/*PRINT_HEX("IV", m_iv, sizeof(m_iv));
+	PRINT_HEX("Plaintext", m_plain_text, sizeof(m_plain_text));
+	PRINT_HEX("Encrypted text", m_encrypted_text, sizeof(m_encrypted_text));*/
+
+	/* Clean up cipher operation context */
+	psa_cipher_abort(&operation);
+
+	return 0;
+}
+
+static int import_ecdsa_pub_key(void)
+{
+	/* Configure the key attributes */
+	psa_key_attributes_t key_attributes = PSA_KEY_ATTRIBUTES_INIT;
+	psa_status_t status;
+ /*  printk("$$$$$$$$$$$$$$$$$$$$$$$$$$$$\n ");
+  for(int i=0;i<32;i++)
+            {
+                printk("%x ",m_pub_key[i]);
+            }
+              printk("$$$\n ");
+              for(int i=32;i<64;i++)
+            {
+                printk("%x ",m_pub_key[i]);
+            }
+             printk("$$$\n ");*/
+	/* Configure the key attributes */
+	psa_set_key_usage_flags(&key_attributes, PSA_KEY_USAGE_VERIFY_HASH);
+	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
+	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
+	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_SECP_R1));
+	psa_set_key_bits(&key_attributes, 256);
+
+	status = psa_import_key(&key_attributes, endp_pub_key, sizeof(endp_pub_key), &endp_pub_key_handle);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_import_key failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* After the key handle is acquired the attributes are not needed */
+	psa_reset_key_attributes(&key_attributes);
+
+	return 0;
+}
+static int verify_endp_message(void)
+{
+	uint32_t output_len;
+	psa_status_t status;
+
+	LOG_INF("Verifying endp ECDSA signature...");
+
+	/* Compute the SHA256 hash*/
+	status = psa_hash_compute(PSA_ALG_SHA_256,
+				  datafield,
+				  sizeof(datafield),
+				  m_hash,
+				  sizeof(m_hash),
+				  &output_len);
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_hash_compute failed! (Error: %d)", status);
+		return -1;
+	}
+
+	/* Sign the hash */
+	status = psa_verify_hash(endp_pub_key_handle,
+			       PSA_ALG_ECDSA(PSA_ALG_SHA_256),
+			       m_hash,
+			       sizeof(m_hash),
+			       m_signature,
+			       sizeof(m_signature));
+	if (status != PSA_SUCCESS) {
+		LOG_INF("psa_sign_hash failed! (Error: %d)", status);
+		return -1;
+	}
+
+	LOG_INF("Verifying the message successful!");
+    
 	return 0;
 }

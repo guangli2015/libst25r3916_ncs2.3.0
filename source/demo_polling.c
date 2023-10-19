@@ -80,6 +80,12 @@ LOG_MODULE_DECLARE(st25r3916);
  * GLOBAL MACROS
  ******************************************************************************
  */
+#define PRINT_HEX(p_label, p_text, len)\
+	({\
+		LOG_INF("---- %s (len: %u): ----", p_label, len);\
+		LOG_HEXDUMP_INF(p_text, len, "Content:");\
+		LOG_INF("---- %s end  ----", p_label);\
+	})
 
 /*
  ******************************************************************************
@@ -170,9 +176,10 @@ static psa_key_handle_t aes_keypair_handle;
 static psa_key_handle_t endp_pub_key_handle;
 uint8_t reader_SK[32]={0x90, 0x05, 0x89, 0x42, 0x0E, 0xB2, 0xBE, 0xB0, 0xBD, 0xD1, 0x33, 0xB6, 0xD7, 0x67, 0x46, 0x98, 0xF1, 0x8E, 0xE6, 0x39, 0xEA, 0x9B, 0xAA, 0xD5, 0x76, 0x29, 0xCE, 0x46, 0xB8, 0x4F, 0xB4, 0xBA};
 static uint8_t reader_eSK[32]={0};
-static uint8_t s_secret[32]={0};
+//static uint8_t s_secret[32]={0};
 static uint8_t endp_pub_key[65];
-
+//static uint8_t d_kdh[32];
+//static  uint8_t auth1_hkdf_info_48[101];
 /*
 /*
  ******************************************************************************
@@ -363,7 +370,7 @@ bool demoIni( void )
         discParam.techs2Find |= RFAL_NFC_LISTEN_TECH_F;
 #endif /* RFAL_SUPPORT_MODE_LISTEN_NFCF */
 #endif /* RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE */
-AUTH0_make();
+//AUTH0_make();
 //AUTH1_make();
 //import_ecdsa_prv_key();
 //import_ecdsa_pub_key();
@@ -818,14 +825,14 @@ void demoAPDU_apple( void )
  //platformLog(" err:%d\n",err);
     if( (err == ERR_NONE) && (*rxLen > 2) && rxData[*rxLen-2] == 0x90 && rxData[*rxLen-1] == 0x00)
     {
-         printk("~~~~~~~~");
-        /* Here more APDUs to implement the protocol are required. */
+        /* printk("~~~~~~~~");
+       
         for(int i=0;i<*rxLen;i++)
         {
           printk(" %x ",rxData[i]);
         }
-         printk("~~~~~~~~");
-        platformLog(" continu...\n");
+         printk("~~~~~~~~");*/
+       // platformLog(" continu...\n");
         AUTH0_make();
         AUTH1_make();
     }
@@ -1107,8 +1114,8 @@ void AUTH1_make()
     uint8_t endp_ePKX_h[]={0x86,0x20};
     uint8_t reader_ePKX_h[]={0x87,0x20};
     uint8_t usage[]={0x93,0x04,0x41,0x5d,0x95,0x69};
-    uint8_t endp_ePKX[32];
-    uint8_t reader_ePKX[32];
+ //   uint8_t endp_ePKX[32];
+ //   uint8_t reader_ePKX[32];
     ReturnCode err;
      uint16_t   *rxLen;
     uint8_t    *rxData;
@@ -1134,28 +1141,31 @@ void AUTH1_make()
     err = demoTransceiveBlocking( auth1_cmd, sizeof(auth1_cmd), &rxData, &rxLen, RFAL_FWT_NONE );
     if( (err == ERR_NONE) && (*rxLen > 2) && rxData[*rxLen-2] == 0x90 && rxData[*rxLen-1] == 0x00)
     {
-        /* Here more APDUs to implement the protocol are required. */
+        /* Here more APDUs to implement the protocol are required. 
         platformLog(" err 0\n");
         for(int i=0;i<*rxLen;i++)
             {
                 platformLog("%x ",rxData[i]);
-            }
+            }*/
+            PRINT_HEX("au1Re", rxData, *rxLen);
     }else 
     {   platformLog("err%d\n",err);
-         for(int i=0;i<*rxLen;i++)
+         /*for(int i=0;i<*rxLen;i++)
             {
                 platformLog("%x ",rxData[i]);
-            }
+            }*/
+         PRINT_HEX("au1ReE", rxData, *rxLen);
     }
 //    import_ecdsa_pub_key();
 //    verify_message();
-    
+     uint8_t s_secret[32]={0};
     create_ecdh_keypair(&ecdh_keypair_handle);
      calculate_ecdh_secret(&ecdh_keypair_handle,
 				       endp_ePK,
 				       sizeof(endp_ePK),
 				       s_secret,
 				       sizeof(s_secret));
+
     uint8_t kdh_input[32+4+16];
     uint8_t tmp[4]={0x00,0x00,0x00,0x01};
     memcpy(kdh_input,s_secret,sizeof(s_secret));
@@ -1164,7 +1174,7 @@ void AUTH1_make()
     
     uint32_t output_len;
 	psa_status_t status;
-     uint8_t d_kdh[32];
+    uint8_t d_kdh[32];
 	/* Compute the SHA256 hash*/
 	status = psa_hash_compute(PSA_ALG_SHA_256,
 				  kdh_input,
@@ -1175,7 +1185,7 @@ void AUTH1_make()
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_hash_compute failed! (Error: %d)", status);
 	}
-    
+   
     uint8_t hkdf_output_key48[48];
     uint8_t auth1_hkdf_info_48[101];
     uint8_t interface_to_end_48[]={0x5E ,0x01 ,0x01 ,0x56 ,0x6F ,0x6C ,0x61 ,0x74 ,0x69 ,0x6C ,0x65 ,0x5C ,0x02 ,0x02 ,0x00 ,0x5C ,0x04 ,0x02 ,0x00 ,0x01 ,0x00 };
@@ -1185,7 +1195,9 @@ void AUTH1_make()
     memcpy(auth1_hkdf_info_48+32+32+sizeof(transaction_id),interface_to_end_48,sizeof(interface_to_end_48));
 
     import_hkdf_input_key(d_kdh);
+
     derive_hkdf(48,auth1_hkdf_info_48,sizeof(auth1_hkdf_info_48));
+
     size_t olen;
     /* Export the generated key content to verify it's value */
 	status = psa_export_key(hkdf_out_keypair_handle, hkdf_output_key48, sizeof(hkdf_output_key48), &olen);
@@ -1193,7 +1205,7 @@ void AUTH1_make()
 		LOG_INF("psa_export_key failed! (Error: %d)", status);
 		
 	}
-
+    PRINT_HEX("key48", hkdf_output_key48, sizeof(hkdf_output_key48));
     uint8_t kPersistent[32];
     uint8_t auth1_hkdf_info_32[103];
     uint8_t interface_to_end_32[]={0x5E ,0x01 ,0x01 ,0x50 ,0x65 ,0x72 ,0x73 ,0x69 ,0x73 ,0x74 ,0x65 , 0x6e ,0x74 ,0x5C ,0x02 ,0x02 ,0x00 ,0x5C ,0x04 ,0x02 ,0x00 ,0x01 ,0x00 };
@@ -1213,15 +1225,17 @@ void AUTH1_make()
     uint8_t m_decrypted_text[133]={0};
     aes_import_key(hkdf_output_key48);
     decrypt_cbc_aes(rxData,(*rxLen)-10,m_decrypted_text ,(*rxLen)-10,m_iv);
-
+ #if 0
     uint8_t endp_usage[]={0x93,0x04,0x4e,0x88,0x7b,0x4c};
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id),endp_usage,sizeof(endp_usage));
-
+    
+    //import_ecdsa_pub_key();
+#endif
     crypto_finish();
 #endif
 }   
 
-static uint8_t m_pub_key[65];//for test
+//static uint8_t m_pub_key[65];//for test
 static int import_ecdsa_prv_key(void)
 {
 	/* Configure the key attributes */
@@ -1253,13 +1267,13 @@ static int import_ecdsa_prv_key(void)
 		return -1;
 	}
     size_t olen;
-    /* Export the public key */
+    /* Export the public key
 	status = psa_export_public_key(auth1_keypair_handle, m_pub_key, sizeof(m_pub_key), &olen);
 	if (status != PSA_SUCCESS) {
        // psa_destroy_key(auth1_keypair_handle);
 		LOG_INF("psa_export_public_key failed! (Error: %d)", status);
 		return -1;
-	}
+	} */
 	/* After the key handle is acquired the attributes are not needed */
 	psa_reset_key_attributes(&key_attributes);
 
@@ -1412,7 +1426,7 @@ static int import_hkdf_input_key(uint8_t *kdh)
 		LOG_INF("psa_import_key failed! (Error: %d)", status);
 		return -1;
 	}
-
+LOG_INF("import_hkdf_input_key successfully!");
 	return 0;
 }
 
@@ -1442,7 +1456,7 @@ static int derive_hkdf(size_t out_key_size,uint8_t * m_ainfo , size_t info_len)
 		LOG_INF("psa_key_derivation_setup failed! (Error: %d)", status);
 		return -1;
 	}
-
+#if 1
 	/* Set the salt for the operation 
 	status = psa_key_derivation_input_bytes(&operation,
 						PSA_KEY_DERIVATION_INPUT_SALT,
@@ -1484,7 +1498,7 @@ static int derive_hkdf(size_t out_key_size,uint8_t * m_ainfo , size_t info_len)
 		LOG_INF("psa_key_derivation_abort failed! (Error: %d)", status);
 		return -1;
 	}
-
+#endif
 	LOG_INF("Key derivation successful!");
 
 	return 0;
@@ -1564,7 +1578,7 @@ static int decrypt_cbc_aes(uint8_t * m_encrypted_text,size_t en_size,uint8_t *m_
 		return -1;
 	}
 
-	//PRINT_HEX("Decrypted text", m_decrypted_text, sizeof(m_decrypted_text));
+	PRINT_HEX("Decrypted text", m_decrypted_text, de_size);
 
 	/* Check the validity of the decryption 
 	if (memcmp(m_decrypted_text,

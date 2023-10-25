@@ -54,6 +54,20 @@
 #include "logger.h"
 #include <psa/crypto.h>
 #include <psa/crypto_extra.h>
+
+
+#include <zephyr/drivers/flash.h>
+#include <zephyr/storage/flash_map.h>
+#include <zephyr/fs/nvs.h>
+
+//static struct nvs_fs fs;
+
+//#define NVS_PARTITION		storage_partition
+//#define NVS_PARTITION_DEVICE	FIXED_PARTITION_DEVICE(NVS_PARTITION)
+//#define NVS_PARTITION_OFFSET	FIXED_PARTITION_OFFSET(NVS_PARTITION)
+#define SPI_FLASH_TEST_REGION_OFFSET 0xff000
+
+#define SPI_FLASH_SECTOR_SIZE        4096
 LOG_MODULE_DECLARE(st25r3916);
 #if RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE
 #include "demo_ce.h"
@@ -155,7 +169,8 @@ static uint8_t expTransacSelectApp[] = { 0x00, 0xA4, 0x04, 0x00, 0x0c, 0xA0, 0x0
 //uint8_t reader_ePK[64]={0};
 
 static uint8_t reader_group_head[]={0x4d,0x10};
-static uint8_t reader_group_id[8]={0xb0,0x2a,0x52,0x74,0xec,0x02,0x13,0x4d};
+//static uint8_t reader_group_id[8]={0xb0,0x2a,0x52,0x74,0xec,0x02,0x13,0x4d};
+ uint8_t reader_group_id[8]={0};
 static uint8_t reader_group_sub_id[8];
 
 static uint8_t transaction_id_head[]={0x4c,0x10};
@@ -174,12 +189,14 @@ static psa_key_handle_t hkdf_in_keypair_handle;
 static psa_key_handle_t hkdf_out_keypair_handle;
 static psa_key_handle_t aes_keypair_handle;
 static psa_key_handle_t endp_pub_key_handle;
-uint8_t reader_SK[32]={0x90, 0x05, 0x89, 0x42, 0x0E, 0xB2, 0xBE, 0xB0, 0xBD, 0xD1, 0x33, 0xB6, 0xD7, 0x67, 0x46, 0x98, 0xF1, 0x8E, 0xE6, 0x39, 0xEA, 0x9B, 0xAA, 0xD5, 0x76, 0x29, 0xCE, 0x46, 0xB8, 0x4F, 0xB4, 0xBA};
+//uint8_t reader_SK[32]={0x90, 0x05, 0x89, 0x42, 0x0E, 0xB2, 0xBE, 0xB0, 0xBD, 0xD1, 0x33, 0xB6, 0xD7, 0x67, 0x46, 0x98, 0xF1, 0x8E, 0xE6, 0x39, 0xEA, 0x9B, 0xAA, 0xD5, 0x76, 0x29, 0xCE, 0x46, 0xB8, 0x4F, 0xB4, 0xBA};
+uint8_t reader_SK[32]={0};
 static uint8_t reader_eSK[32]={0};
 //static uint8_t s_secret[32]={0};
 static uint8_t endp_pub_key[65];
 //static uint8_t d_kdh[32];
 //static  uint8_t auth1_hkdf_info_48[101];
+static const struct device *flash_dev = DEVICE_DT_GET(DT_ALIAS(spi_flash0));
 /*
 /*
  ******************************************************************************
@@ -195,7 +212,7 @@ static uint8_t              state = DEMO_ST_NOTINIT;
 * LOCAL FUNCTION PROTOTYPES
 ******************************************************************************
 */
-
+extern void LockStateChangebyNfc();
 static void demoP2P( rfalNfcDevice *nfcDev );
 static void demoAPDU( void );
 static void demoAPDU_apple( void );
@@ -223,6 +240,9 @@ static int import_ecdsa_pub_key(void);
 static int verify_endp_message(void);
 static void control_flow_make();
 static int encrypt_cbc_aes(uint8_t * m_encrypted_text,size_t en_size,uint8_t *m_plain_text ,size_t pl_size,uint8_t * m_iv);
+
+static void flash_setup();
+void writeToFlash(uint8_t *Pdata , size_t len);
 static ReturnCode demoPropNfcInitialize( void )
 { //platformLog("in\n");
     rfalNfcaPollerInitialize();                            /* Initialize RFAL for NFC-A */
@@ -272,6 +292,66 @@ static void demoNotif( rfalNfcState st )
     }
 }
 
+
+void single_sector_test(const struct device *flash_dev)
+{
+	 uint8_t expected[40] ={0x38};
+	const size_t len = sizeof(expected);
+	uint8_t buf[sizeof(expected)];
+	int rc;
+
+	printk("\nPerform test on single sector");
+	/* Write protection needs to be disabled before each write or
+	 * erase, since the flash component turns on write protection
+	 * automatically after completion of write and erase
+	 * operations.
+	 */
+	printk("\nTest 1: Flash erase\n");
+
+	/* Full flash erase if SPI_FLASH_TEST_REGION_OFFSET = 0 and
+	 * SPI_FLASH_SECTOR_SIZE = flash size
+	 */
+	rc = flash_erase(flash_dev, SPI_FLASH_TEST_REGION_OFFSET,
+			 SPI_FLASH_SECTOR_SIZE);
+	if (rc != 0) {
+		printk("Flash erase failed! %d\n", rc);
+	} else {
+		printk("Flash erase succeeded!\n");
+	}
+
+	printk("\nTest 2: Flash write\n");
+
+	printk("Attempting to write %zu bytes\n", len);
+	rc = flash_write(flash_dev, SPI_FLASH_TEST_REGION_OFFSET, expected, len);
+	if (rc != 0) {
+		printk("Flash write failed! %d\n", rc);
+		return;
+	}
+
+	memset(buf, 0, len);
+	rc = flash_read(flash_dev, SPI_FLASH_TEST_REGION_OFFSET, buf, len);
+	if (rc != 0) {
+		printk("Flash read failed! %d\n", rc);
+		return;
+	}
+
+	if (memcmp(expected, buf, len) == 0) {
+		printk("Data read matches data written. Good!!\n");
+	} else {
+		const uint8_t *wp = expected;
+		const uint8_t *rp = buf;
+		const uint8_t *rpe = rp + len;
+
+		printk("Data read does not match data written!!\n");
+		while (rp < rpe) {
+			printk("%08x wrote %02x read %02x %s\n",
+			       (uint32_t)(SPI_FLASH_TEST_REGION_OFFSET + (rp - buf)),
+			       *wp, *rp, (*rp == *wp) ? "match" : "MISMATCH");
+			++rp;
+			++wp;
+		}
+	}
+}
 /*!
  *****************************************************************************
  * \brief Demo Ini
@@ -378,6 +458,7 @@ bool demoIni( void )
 //import_ecdsa_pub_key();
 //sign_message();
 //verify_message();
+flash_setup();
         /* Check for valid configuration by calling Discover once */
         err = rfalNfcDiscover( &discParam );
         rfalNfcDeactivate( false );
@@ -1013,7 +1094,19 @@ void AUTH0_make()
     ReturnCode err;
     uint16_t   *rxLen;
     uint8_t    *rxData;
+    int rc;
+    uint8_t temp[40];
       platformLog("AUTH0_make start...\n");
+      rc = flash_read(flash_dev, SPI_FLASH_TEST_REGION_OFFSET, temp, 40);
+	  if (rc != 0) {
+		platformLog("Flash read failed! %d\n", rc);
+	  }
+      memcpy(reader_group_id,temp,sizeof(reader_group_id));
+      memcpy(reader_SK,temp+sizeof(reader_group_id),sizeof(reader_SK));
+ //   nvs_read(&fs, 1, reader_SK, sizeof(reader_SK));
+ //   nvs_read(&fs, 2, reader_group_id, sizeof(reader_group_id));
+	  PRINT_HEX("reader_SK",reader_SK, 32);
+     PRINT_HEX("r_g_id", reader_group_id, 8);
    	/* Initialize PSA Crypto */
 	status = psa_crypto_init();
 	if (status != PSA_SUCCESS)
@@ -1038,8 +1131,8 @@ void AUTH0_make()
 			return ;
 		}
 
-    PRINT_HEX("transaction_id", transaction_id, 16);
-    PRINT_HEX("reader_group_sub_id", reader_group_sub_id, 8);
+   // PRINT_HEX("transaction_id", transaction_id, 16);
+   // PRINT_HEX("reader_group_sub_id", reader_group_sub_id, 8);
     memcpy(auth0_data,auth0_head,sizeof(auth0_head));
     memcpy(auth0_data+sizeof(auth0_head),reader_ePK_head,sizeof(reader_ePK_head));
     memcpy(auth0_data+sizeof(auth0_head)+sizeof(reader_ePK_head),reader_ePK,sizeof(reader_ePK));
@@ -1088,7 +1181,7 @@ printk("-------------------------\n ");
             }*/
             memcpy(endp_ePK,rxData+2,65);
             //printk("!!!!!!!!!!!!!!!!!!!!!!!!!!!!\n ");
-            PRINT_HEX("endp_ePK", endp_ePK, 65);
+           // PRINT_HEX("endp_ePK", endp_ePK, 65);
 
         }
        
@@ -1178,7 +1271,7 @@ void AUTH1_make()
             {
                 platformLog("%x ",rxData[i]);
             }*/
-            PRINT_HEX("au1Re", rxData, *rxLen);
+           // PRINT_HEX("au1Re", rxData, *rxLen);
     }else 
     {   platformLog("err%d\n",err);
          /*for(int i=0;i<*rxLen;i++)
@@ -1237,7 +1330,7 @@ void AUTH1_make()
 		LOG_INF("psa_export_key failed! (Error: %d)", status);
 		
 	}
-    PRINT_HEX("key48", hkdf_output_key48, sizeof(hkdf_output_key48));
+    //PRINT_HEX("key48", hkdf_output_key48, sizeof(hkdf_output_key48));
     uint8_t kPersistent[32];
     uint8_t auth1_hkdf_info_32[103];
     uint8_t interface_to_end_32[]={0x5E ,0x01 ,0x01 ,0x50 ,0x65 ,0x72 ,0x73 ,0x69 ,0x73 ,0x74 ,0x65 , 0x6e ,0x74 ,0x5C ,0x02 ,0x02 ,0x00 ,0x5C ,0x04 ,0x02 ,0x00 ,0x01 ,0x00 };
@@ -1263,7 +1356,7 @@ void AUTH1_make()
  #if 1
     uint8_t endp_usage[]={0x93,0x04,0x4e,0x88,0x7b,0x4c};
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id),endp_usage,sizeof(endp_usage));
-    
+    LockStateChangebyNfc();
     //import_ecdsa_pub_key();
 #endif
     crypto_finish();
@@ -1294,7 +1387,7 @@ static int import_ecdsa_prv_key(void)
 	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
 	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_KEY_PAIR(PSA_ECC_FAMILY_SECP_R1));
 	//psa_set_key_bits(&key_attributes, 256);
-
+    PRINT_HEX("reader_SKecdsa", reader_SK, 32);
 	status = psa_import_key(&key_attributes, reader_SK, sizeof(reader_SK), &auth1_keypair_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_import_key failed! (Error: %d)", status);
@@ -1596,7 +1689,7 @@ static int decrypt_cbc_aes(uint8_t * m_encrypted_text,size_t en_size,uint8_t *m_
 		LOG_INF("psa_cipher_set_iv failed! (Error: %d)", status);
 		return -1;
 	}
-PRINT_HEX("Encrypted text", m_encrypted_text, en_size);
+//PRINT_HEX("Encrypted text", m_encrypted_text, en_size);
 	/* Perform the decryption */
 	status = psa_cipher_update(&operation, m_encrypted_text,
 				  en_size, m_decrypted_text,
@@ -1754,4 +1847,44 @@ static int verify_endp_message(void)
 	LOG_INF("Verifying the message successful!");
     
 	return 0;
+}
+
+void flash_setup(void)
+{
+
+	if (!device_is_ready(flash_dev)) {
+		printk("%s: device not ready.\n", flash_dev->name);
+		return 0;
+	}
+
+	//printk("\n%s SPI flash testing\n", flash_dev->name);
+	//printk("==========================\n");
+
+	//single_sector_test(flash_dev);
+}
+
+void writeToFlash(uint8_t *Pdata , size_t len)
+{
+
+	int rc;
+	/* Full flash erase if SPI_FLASH_TEST_REGION_OFFSET = 0 and
+	 * SPI_FLASH_SECTOR_SIZE = flash size
+	 */
+	rc = flash_erase(flash_dev, SPI_FLASH_TEST_REGION_OFFSET,
+			 SPI_FLASH_SECTOR_SIZE);
+	if (rc != 0) {
+		printk("Flash erase failed! %d\n", rc);
+	} else {
+		printk("Flash erase succeeded!\n");
+	}
+
+	printk("Attempting to write %zu bytes\n", len);
+	rc = flash_write(flash_dev, SPI_FLASH_TEST_REGION_OFFSET, Pdata, len);
+	if (rc != 0) {
+		printk("Flash write failed! %d\n", rc);
+		return;
+	}
+
+
+
 }

@@ -237,7 +237,7 @@ static int derive_hkdf(size_t out_key_size,uint8_t * m_ainfo , size_t info_len);
 static int aes_import_key(uint8_t * kenc);
 static int decrypt_cbc_aes(uint8_t * m_encrypted_text,size_t en_size,uint8_t *m_decrypted_text ,size_t de_size,uint8_t * m_iv);
 static int import_ecdsa_pub_key(void);
-static int verify_endp_message(void);
+static int verify_endp_message(uint8_t *endp_sig,size_t sig_size);
 static void control_flow_make();
 static int encrypt_cbc_aes(uint8_t * m_encrypted_text,size_t en_size,uint8_t *m_plain_text ,size_t pl_size,uint8_t * m_iv);
 
@@ -1105,8 +1105,8 @@ void AUTH0_make()
       memcpy(reader_SK,temp+sizeof(reader_group_id),sizeof(reader_SK));
  //   nvs_read(&fs, 1, reader_SK, sizeof(reader_SK));
  //   nvs_read(&fs, 2, reader_group_id, sizeof(reader_group_id));
-	  PRINT_HEX("reader_SK",reader_SK, 32);
-     PRINT_HEX("r_g_id", reader_group_id, 8);
+//	  PRINT_HEX("reader_SK",reader_SK, 32);
+ //    PRINT_HEX("r_g_id", reader_group_id, 8);
    	/* Initialize PSA Crypto */
 	status = psa_crypto_init();
 	if (status != PSA_SUCCESS)
@@ -1228,7 +1228,7 @@ int sign_message(void)
 }
 void AUTH1_make()
 {
-    uint8_t auth1_head[]={0x80,0x81,0x00,0x00,0x42};
+    uint8_t auth1_head[]={0x80,0x81,0x01,0x00,0x42};
     uint8_t reader_sig_head[]={0x9e,0x40};
     //uint8_t reader_sig[64]={0};
     uint8_t auth1_end[]={0x00};
@@ -1349,15 +1349,20 @@ void AUTH1_make()
     uint8_t append_text[]={0x80,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00,0x00};
     //uint8_t m_iv[16]={0xCB ,0x63 ,0xDE ,0xB0 ,0x19 ,0xCC ,0x83 ,0x7C ,0x05 ,0x1E ,0x83 ,0x16 ,0xF4 ,0xF2 ,0x07 ,0x46};
     uint8_t m_iv[16];
-    uint8_t m_decrypted_text[133]={0};
+    uint8_t m_decrypted_text[144]={0};
     aes_import_key(hkdf_output_key48);
     encrypt_cbc_aes(m_iv,sizeof(m_iv),append_text,sizeof(append_text),iv_for_miv);
     decrypt_cbc_aes(rxData,(*rxLen)-10,m_decrypted_text ,(*rxLen)-10,m_iv);
+    memcpy(endp_pub_key,m_decrypted_text+2,65);
  #if 1
     uint8_t endp_usage[]={0x93,0x04,0x4e,0x88,0x7b,0x4c};
     memcpy(datafield+sizeof(reader_group_head)+sizeof(reader_group_id)+sizeof(reader_group_sub_id)+sizeof(endp_ePKX_h)+32+sizeof(reader_ePKX_h)+32+sizeof(transaction_id_head)+sizeof(transaction_id),endp_usage,sizeof(endp_usage));
+
     LockStateChangebyNfc();
-    //import_ecdsa_pub_key();
+    import_ecdsa_pub_key();
+    verify_endp_message(m_decrypted_text+69,64);
+
+
 #endif
     crypto_finish();
 #endif
@@ -1800,8 +1805,8 @@ static int import_ecdsa_pub_key(void)
 	psa_set_key_lifetime(&key_attributes, PSA_KEY_LIFETIME_VOLATILE);
 	psa_set_key_algorithm(&key_attributes, PSA_ALG_ECDSA(PSA_ALG_SHA_256));
 	psa_set_key_type(&key_attributes, PSA_KEY_TYPE_ECC_PUBLIC_KEY(PSA_ECC_FAMILY_SECP_R1));
-	psa_set_key_bits(&key_attributes, 256);
-
+	//psa_set_key_bits(&key_attributes, 256);
+PRINT_HEX("endp_pub_key", endp_pub_key, sizeof(endp_pub_key));
 	status = psa_import_key(&key_attributes, endp_pub_key, sizeof(endp_pub_key), &endp_pub_key_handle);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_import_key failed! (Error: %d)", status);
@@ -1813,7 +1818,7 @@ static int import_ecdsa_pub_key(void)
 
 	return 0;
 }
-static int verify_endp_message(void)
+static int verify_endp_message(uint8_t *endp_sig,size_t sig_size)
 {
 	uint32_t output_len;
 	psa_status_t status;
@@ -1837,8 +1842,8 @@ static int verify_endp_message(void)
 			       PSA_ALG_ECDSA(PSA_ALG_SHA_256),
 			       m_hash,
 			       sizeof(m_hash),
-			       m_signature,
-			       sizeof(m_signature));
+			       endp_sig,
+			       sig_size);
 	if (status != PSA_SUCCESS) {
 		LOG_INF("psa_sign_hash failed! (Error: %d)", status);
 		return -1;

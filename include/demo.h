@@ -54,6 +54,35 @@ extern "C" {
 bool demoIni( void );
 extern void demoCycle(void);
 
+/*!
+ *****************************************************************************
+ * \brief Demo Blocking Transceive 
+ *
+ * Helper function to send data in a blocking manner via the rfalNfc module 
+ *  
+ * \warning A protocol transceive handles long timeouts (several seconds), 
+ * transmission errors and retransmissions which may lead to a long period of 
+ * time where the MCU/CPU is blocked in this method.
+ * This is a demo implementation, for a non-blocking usage example please 
+ * refer to the Examples available with RFAL
+ *
+ * \param[in]  txBuf      : data to be transmitted
+ * \param[in]  txBufSize  : size of the data to be transmited
+ * \param[out] rxData     : location where the received data has been placed
+ * \param[out] rcvLen     : number of data bytes received
+ * \param[in]  fwt        : FWT to be used (only for RF frame interface, 
+ *                                          otherwise use RFAL_FWT_NONE)
+ *
+ * 
+ *  \return ERR_PARAM     : Invalid parameters
+ *  \return ERR_TIMEOUT   : Timeout error
+ *  \return ERR_FRAMING   : Framing error detected
+ *  \return ERR_PROTO     : Protocol error detected
+ *  \return ERR_NONE      : No error, activation successful
+ * 
+ *****************************************************************************
+ */
+ReturnCode demoTransceiveBlocking( uint8_t *txBuf, uint16_t txBufSize, uint8_t **rxData, uint16_t **rcvLen, uint32_t fwt );
 #ifdef __cplusplus
 }
 #endif

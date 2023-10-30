@@ -34,26 +34,7 @@ int st25r3916_nfca_init()
 		return err;
 	}
 	LOG_INF("st25r3916_nfca_init ok");
-/*	LOG_INF("preval 0x%x \n",val);
-	err=st25r3916ReadRegister(ST25R3916_REG_OP_CONTROL,&val);
-	if (err) {
-		LOG_INF("st25r3916ReadRegister fail\n");
-		return err;
-	}
-	LOG_INF("aftval 0x%x \n",val);
-	st25r3916WriteRegister(ST25R3916_REG_OP_CONTROL,0xc0);
-		LOG_INF("preval 0x%x \n",val);
-	err=st25r3916ReadRegister(ST25R3916_REG_OP_CONTROL,&val);
-	if (err) {
-		LOG_INF("st25r3916ReadRegister fail\n");
-		return err;
-	}
-	LOG_INF("aftval 0x%x \n",val);*/
-	//st25r3916InitInterrupts();
-		/* Initialize rfal and run example code for NFCA */
-	//exampleRfalPollerRun();
 
-	
 	return 0;
 }
 

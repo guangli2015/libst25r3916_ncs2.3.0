@@ -150,7 +150,7 @@ static uint8_t ceNFCF_SENSF_RES[]  = {0x01,                                     
                                   0x00, 0x00 };                                               /* RD                                       */
 #endif /* RFAL_SUPPORT_MODE_LISTEN_NFCF */
 #endif /* RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE */
-                                 
+#if 0                                 
 /* VASUP-A Command: TCI must be set according to data received via MFi Program  */
 static uint8_t demoEcpVasup[] = { 0x6A,    /* VASUP-A Command             */
                                   0x02,    /* Byte1  - Format: 2.0        */
@@ -170,7 +170,7 @@ static uint8_t expTransacSelectApp[] = { 0x00, 0xA4, 0x04, 0x00, 0x0c, 0xA0, 0x0
 
 static uint8_t reader_group_head[]={0x4d,0x10};
 //static uint8_t reader_group_id[8]={0xb0,0x2a,0x52,0x74,0xec,0x02,0x13,0x4d};
- uint8_t reader_group_id[8]={0};
+// uint8_t reader_group_id[8]={0};
 static uint8_t reader_group_sub_id[8];
 
 static uint8_t transaction_id_head[]={0x4c,0x10};
@@ -190,13 +190,14 @@ static psa_key_handle_t hkdf_out_keypair_handle;
 static psa_key_handle_t aes_keypair_handle;
 static psa_key_handle_t endp_pub_key_handle;
 //uint8_t reader_SK[32]={0x90, 0x05, 0x89, 0x42, 0x0E, 0xB2, 0xBE, 0xB0, 0xBD, 0xD1, 0x33, 0xB6, 0xD7, 0x67, 0x46, 0x98, 0xF1, 0x8E, 0xE6, 0x39, 0xEA, 0x9B, 0xAA, 0xD5, 0x76, 0x29, 0xCE, 0x46, 0xB8, 0x4F, 0xB4, 0xBA};
-uint8_t reader_SK[32]={0};
+//uint8_t reader_SK[32]={0};
 static uint8_t reader_eSK[32]={0};
 //static uint8_t s_secret[32]={0};
 static uint8_t endp_pub_key[65];
+#endif
 //static uint8_t d_kdh[32];
 //static  uint8_t auth1_hkdf_info_48[101];
-static const struct device *flash_dev = DEVICE_DT_GET(DT_ALIAS(spi_flash0));
+ const struct device *flash_dev = DEVICE_DT_GET(DT_ALIAS(spi_flash0));
 /*
 /*
  ******************************************************************************
@@ -212,6 +213,11 @@ static uint8_t              state = DEMO_ST_NOTINIT;
 * LOCAL FUNCTION PROTOTYPES
 ******************************************************************************
 */
+extern void uaap_expedited_standard_transaction( void );
+extern void Make_ECPVASUP_cmd(uint8_t *data,size_t size);
+//extern void Make_AUTH0_cmd();
+//extern void Make_AUTH1_cmd();
+//extern void Make_control_flow_cmd();
 extern void LockStateChangebyNfc();
 static void demoP2P( rfalNfcDevice *nfcDev );
 static void demoAPDU( void );
@@ -221,6 +227,7 @@ static void demoNfcf( rfalNfcfListenDevice *nfcfDev );
 static void demoCE( rfalNfcDevice *nfcDev );
 static void demoNotif( rfalNfcState st );
 ReturnCode  demoTransceiveBlocking( uint8_t *txBuf, uint16_t txBufSize, uint8_t **rxBuf, uint16_t **rcvLen, uint32_t fwt );
+#if 0
 void AUTH0_make();
 void AUTH1_make();
 static int import_ecdsa_prv_key(void);
@@ -240,8 +247,8 @@ static int import_ecdsa_pub_key(void);
 static int verify_endp_message(uint8_t *endp_sig,size_t sig_size);
 static void control_flow_make();
 static int encrypt_cbc_aes(uint8_t * m_encrypted_text,size_t en_size,uint8_t *m_plain_text ,size_t pl_size,uint8_t * m_iv);
-
-static void flash_setup();
+#endif
+ void flash_setup();
 void writeToFlash(uint8_t *Pdata , size_t len);
 static ReturnCode demoPropNfcInitialize( void )
 { //platformLog("in\n");
@@ -258,7 +265,9 @@ static ReturnCode demoPropNfcTechnologyDetection( void )
 {
      //platformLog("$$\n");
     /* Send VASUP-A */
-    rfalTransceiveBlockingTxRx( demoEcpVasup, sizeof(demoEcpVasup), NULL, 0, NULL, RFAL_TXRX_FLAGS_DEFAULT, RFAL_NFCA_FDTMIN );
+    uint8_t VASUP[16];
+    Make_ECPVASUP_cmd(VASUP,sizeof(VASUP));
+    rfalTransceiveBlockingTxRx( VASUP, sizeof(VASUP), NULL, 0, NULL, RFAL_TXRX_FLAGS_DEFAULT, RFAL_NFCA_FDTMIN );
 
     return ERR_TIMEOUT;
 }
@@ -292,7 +301,7 @@ static void demoNotif( rfalNfcState st )
     }
 }
 
-
+#if 0
 void single_sector_test(const struct device *flash_dev)
 {
 	 uint8_t expected[40] ={0x38};
@@ -352,6 +361,7 @@ void single_sector_test(const struct device *flash_dev)
 		}
 	}
 }
+#endif
 /*!
  *****************************************************************************
  * \brief Demo Ini
@@ -452,13 +462,7 @@ bool demoIni( void )
         discParam.techs2Find |= RFAL_NFC_LISTEN_TECH_F;
 #endif /* RFAL_SUPPORT_MODE_LISTEN_NFCF */
 #endif /* RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE */
-//AUTH0_make();
-//AUTH1_make();
-//import_ecdsa_prv_key();
-//import_ecdsa_pub_key();
-//sign_message();
-//verify_message();
-flash_setup();
+
         /* Check for valid configuration by calling Discover once */
         err = rfalNfcDiscover( &discParam );
         rfalNfcDeactivate( false );
@@ -543,7 +547,8 @@ void demoCycle( void )
                                 platformLog("NFCA Passive ISO-DEP device found. UID: %s\r\n", hex2str( nfcDevice->nfcid, nfcDevice->nfcidLen ) );
                             
                                //demoAPDU();
-                                demoAPDU_apple();
+                                //demoAPDU_apple();
+                                uaap_expedited_standard_transaction();
                                 break;
                             
                             case RFAL_NFCA_T4T_NFCDEP:
@@ -632,7 +637,8 @@ void demoCycle( void )
                                        ((nfcDevice->type == RFAL_NFC_POLL_TYPE_NFCA) ? PLATFORM_LED_A_PIN  : PLATFORM_LED_F_PIN)  );
                     
                        // demoCE( nfcDevice );
-                       demoAPDU_apple();
+                       //demoAPDU_apple();
+                        //uaap_expedited_standard_transaction();
                         break;
                     
                     /*******************************************************************************/
@@ -897,6 +903,7 @@ void demoAPDU( void )
     }
 #endif /* RFAL_FEATURE_ISO_DEP_POLL */
 }
+#if 0
 void demoAPDU_apple( void )
 {
  ReturnCode err;
@@ -916,13 +923,14 @@ void demoAPDU_apple( void )
         }
          printk("~~~~~~~~");*/
        // platformLog(" continu...\n");
-        AUTH0_make();
-        AUTH1_make();
-        control_flow_make();
+       // AUTH0_make();
+       Make_AUTH0_cmd();
+        Make_AUTH1_cmd();
+        Make_control_flow_cmd();
     }
 
 }
-
+#endif
 /*!
  *****************************************************************************
  * \brief Demo Blocking Transceive 
@@ -966,7 +974,7 @@ ReturnCode demoTransceiveBlocking( uint8_t *txBuf, uint16_t txBufSize, uint8_t *
     }
     return err;
 }
-
+#if 0
 int crypto_finish(void)
 {
 	psa_status_t status;
@@ -1081,6 +1089,7 @@ static void control_flow_make()
          LOG_INF("transaction fail\n");
     }
 }
+#if 1
 void AUTH0_make()
 {
     psa_status_t status;
@@ -1189,7 +1198,7 @@ printk("-------------------------\n ");
     //crypto_finish();
     return;
 }
-
+#endif
 int sign_message(void)
 {
 	uint32_t output_len;
@@ -1853,7 +1862,7 @@ static int verify_endp_message(uint8_t *endp_sig,size_t sig_size)
     
 	return 0;
 }
-
+#endif
 void flash_setup(void)
 {
 
@@ -1892,4 +1901,13 @@ void writeToFlash(uint8_t *Pdata , size_t len)
 
 
 
+}
+
+void read_from_flash(uint8_t *tmp, size_t size)
+{    
+    int rc;
+    rc = flash_read(flash_dev, SPI_FLASH_TEST_REGION_OFFSET, tmp, 40);
+	if (rc != 0) {
+		LOG_INF("Flash read failed! %d\n", rc);
+	}
 }

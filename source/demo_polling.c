@@ -163,7 +163,7 @@ static uint8_t              state = DEMO_ST_NOTINIT;
 * LOCAL FUNCTION PROTOTYPES
 ******************************************************************************
 */
-extern void uaap_expedited_standard_transaction( void );
+extern void uaap_transactions( void );
 extern void Make_ECPVASUP_cmd(uint8_t *data,size_t size);
 
 extern void LockStateChangebyNfc();
@@ -414,7 +414,7 @@ void demoCycle( void )
                             case RFAL_NFCA_T4T:
                                 platformLog("NFCA Passive ISO-DEP device found. UID: %s\r\n", hex2str( nfcDevice->nfcid, nfcDevice->nfcidLen ) );
                             
-                                uaap_expedited_standard_transaction();
+                                uaap_transactions();
                                 break;
                             
                             case RFAL_NFCA_T4T_NFCDEP:

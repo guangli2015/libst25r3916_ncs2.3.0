@@ -836,12 +836,15 @@ void writeToFlash(uint8_t *Pdata , size_t len)
 		printk("Flash erase succeeded!\n");
 	}
 
-	printk("Attempting to write %zu bytes\n", len);
-	rc = flash_write(flash_dev, SPI_FLASH_TEST_REGION_OFFSET, Pdata, len);
-	if (rc != 0) {
-		printk("Flash write failed! %d\n", rc);
-		return;
-	}
+    if(Pdata != NULL)
+	{
+        printk("Attempting to write %zu bytes\n", len);
+	    rc = flash_write(flash_dev, SPI_FLASH_TEST_REGION_OFFSET, Pdata, len);
+	    if (rc != 0) {
+		    printk("Flash write failed! %d\n", rc);
+		    return;
+	    }
+    }
 
 
 

@@ -197,7 +197,7 @@ void st25r3916CheckForReceivedInterrupts( void )
        irqStatus |= (uint32_t)iregs[2]<<16;
        irqStatus |= (uint32_t)iregs[3]<<24;
    }
-    //LOG_INF("I3");
+   LOG_ERR("st25r3916CheckForReceivedInterrupts irqStatus is 0x%02x", irqStatus);
    /* Forward all interrupts, even masked ones to application */
    platformProtectST25RIrqStatus();
    st25r3916interrupt.status |= irqStatus;

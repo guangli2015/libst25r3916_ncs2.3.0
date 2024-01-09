@@ -68,7 +68,7 @@ LOG_MODULE_DECLARE(st25r3916);
 #if RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE
 #include "demo_ce.h"
 #endif /* RFAL_FEATURE_LISTEN_MODE */
-#define platformLog LOG_INF
+#define platformLog LOG_ERR
 /*
 ******************************************************************************
 * GLOBAL DEFINES
@@ -261,9 +261,9 @@ bool demoIni( void )
         discParam.p2pNfcaPrio   = true;
 
         discParam.notifyCb             = demoNotif;
-        discParam.wakeupEnabled        = false;
+        discParam.wakeupEnabled        = true;
         discParam.wakeupConfigDefault  = true;
-        discParam.wakeupNPolls         = 1U;
+        discParam.wakeupNPolls         = 3U;
         discParam.totalDuration        = 100U;
         discParam.techs2Find           = RFAL_NFC_TECH_NONE;          /* For the demo, enable the NFC Technlogies based on RFAL Feature switches */
 
@@ -373,12 +373,12 @@ void demoCycle( void )
         while( platformGpioIsLow(PLATFORM_USER_BUTTON_PORT, PLATFORM_USER_BUTTON_PIN) );
     }
 #endif /* PLATFORM_USER_BUTTON_PIN */
-    
+    platformLog("%s enter with state %d rfalNfcGetState == %d", __func__, state, rfalNfcGetState());
     switch( state )
     {
         /*******************************************************************************/
         case DEMO_ST_START_DISCOVERY:
-
+          platformLog("%s DEMO_ST_START_DISCOVERY", __func__);
           platformLedOff(PLATFORM_LED_A_PORT, PLATFORM_LED_A_PIN);
           platformLedOff(PLATFORM_LED_B_PORT, PLATFORM_LED_B_PIN);
           platformLedOff(PLATFORM_LED_F_PORT, PLATFORM_LED_F_PIN);
@@ -394,11 +394,11 @@ void demoCycle( void )
 
         /*******************************************************************************/
         case DEMO_ST_DISCOVERY:
-        
+
             if( rfalNfcIsDevActivated( rfalNfcGetState() ) )
             {
                 rfalNfcGetActiveDevice( &nfcDevice );
-                
+                platformLog("%s DEMO_ST_DISCOVERY nfcDevice->type = %d", __func__, nfcDevice->type);
                 switch( nfcDevice->type )
                 {
                     /*******************************************************************************/

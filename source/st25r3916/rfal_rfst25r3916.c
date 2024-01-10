@@ -47,7 +47,8 @@
 #include "rfal_iso15693_2.h"
 #include "rfal_crc.h"
 
-
+#include <zephyr/logging/log.h>
+LOG_MODULE_DECLARE(st25r3916);
 /*
  ******************************************************************************
  * ENABLE SWITCHS
@@ -4303,6 +4304,8 @@ ReturnCode rfalWakeUpModeStart( const rfalWakeUpConfig *config )
         
         /*******************************************************************************/
         /* Check if AAT is enabled and if so make use of the SW Tag Detection          */
+        LOG_ERR("%s enter st25r3916IsAATOn() == %d", __func__, st25r3916IsAATOn());
+        
         if( st25r3916IsAATOn() )
         {
             /* Enable SW TD with delta of 1.5 and enable auto average */

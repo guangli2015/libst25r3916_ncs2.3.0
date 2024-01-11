@@ -46,7 +46,7 @@
 #endif
    
 /* Includes ------------------------------------------------------------------*/
-#include "platform.h"
+#include "rfal_platform.h"
 
 /** @addtogroup X-CUBE-NFC6_Applications
  *  @brief Sample applications for X-NUCLEO-NFC06A1 STM32 expansion boards.

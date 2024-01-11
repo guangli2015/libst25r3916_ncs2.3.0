@@ -36,7 +36,7 @@
 
 #ifndef ST_ERRNO_H
 #define ST_ERRNO_H
-
+#include <stdint.h>  
 /*
 ******************************************************************************
 * INCLUDES

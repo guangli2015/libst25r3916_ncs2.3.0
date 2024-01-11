@@ -48,8 +48,8 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_rf.h"
 
 /*
@@ -95,8 +95,8 @@
 #define RFAL_ANALOG_CONFIG_BITRATE_3390             (0x0060U) /*!< 3390kbits/s settings in Analog Configuration ID              */
 #define RFAL_ANALOG_CONFIG_BITRATE_6780             (0x0070U) /*!< 6780kbits/s settings in Analog Configuration ID              */
 #define RFAL_ANALOG_CONFIG_BITRATE_53               (0x00B0U) /*!< 53kbits/s (ISO15693 x2) setting in Analog Configuration ID   */
-#define RFAL_ANALOG_CONFIG_BITRATE_1OF4             (0x00C0U) /*!< 1 out of 4 for NFC-V setting in Analog Configuration ID      */
-#define RFAL_ANALOG_CONFIG_BITRATE_1OF256           (0x00D0U) /*!< 1 out of 256 for NFC-V setting in Analog Configuration ID    */
+#define RFAL_ANALOG_CONFIG_BITRATE_26               (0x00C0U) /*!< 26kbit/s (1 out of 4) NFC-V setting Analog Configuration ID  */
+#define RFAL_ANALOG_CONFIG_BITRATE_1p6              (0x00D0U) /*!< 1.6kbit/s (1 out of 256) NFC-V setting Analog Config ID      */
 
 #define RFAL_ANALOG_CONFIG_NO_DIRECTION             (0x0000U) /*!< No direction setting in Analog Conf ID (Chip Specific only)  */
 #define RFAL_ANALOG_CONFIG_TX                       (0x0001U) /*!< Transmission bit setting in Analog Configuration ID          */
@@ -155,15 +155,15 @@
 
 #define RFAL_ANALOG_CONFIG_ID_GET_BITRATE(id)       (RFAL_ANALOG_CONFIG_BITRATE_MASK & (id))   /*!< Get Bitrate of Configuration ID            */
 #define RFAL_ANALOG_CONFIG_ID_IS_COMMON(id)         (RFAL_ANALOG_CONFIG_BITRATE_MASK & (id))   /*!< Check if ID indicates common bitrate       */
-#define RFAL_ANALOG_CONFIG_ID_IS_106(id)            (RFAL_ANALOG_CONFIG_BITRATE_106 & (id))    /*!< Check if ID indicates 106kbits/s           */
-#define RFAL_ANALOG_CONFIG_ID_IS_212(id)            (RFAL_ANALOG_CONFIG_BITRATE_212 & (id))    /*!< Check if ID indicates 212kbits/s           */
-#define RFAL_ANALOG_CONFIG_ID_IS_424(id)            (RFAL_ANALOG_CONFIG_BITRATE_424 & (id))    /*!< Check if ID indicates 424kbits/s           */
-#define RFAL_ANALOG_CONFIG_ID_IS_848(id)            (RFAL_ANALOG_CONFIG_BITRATE_848 & (id))    /*!< Check if ID indicates 848kbits/s           */
+#define RFAL_ANALOG_CONFIG_ID_IS_106(id)            (RFAL_ANALOG_CONFIG_BITRATE_106  & (id))   /*!< Check if ID indicates 106kbits/s           */
+#define RFAL_ANALOG_CONFIG_ID_IS_212(id)            (RFAL_ANALOG_CONFIG_BITRATE_212  & (id))   /*!< Check if ID indicates 212kbits/s           */
+#define RFAL_ANALOG_CONFIG_ID_IS_424(id)            (RFAL_ANALOG_CONFIG_BITRATE_424  & (id))   /*!< Check if ID indicates 424kbits/s           */
+#define RFAL_ANALOG_CONFIG_ID_IS_848(id)            (RFAL_ANALOG_CONFIG_BITRATE_848  & (id))   /*!< Check if ID indicates 848kbits/s           */
 #define RFAL_ANALOG_CONFIG_ID_IS_1695(id)           (RFAL_ANALOG_CONFIG_BITRATE_1695 & (id))   /*!< Check if ID indicates 1695kbits/s          */
 #define RFAL_ANALOG_CONFIG_ID_IS_3390(id)           (RFAL_ANALOG_CONFIG_BITRATE_3390 & (id))   /*!< Check if ID indicates 3390kbits/s          */
 #define RFAL_ANALOG_CONFIG_ID_IS_6780(id)           (RFAL_ANALOG_CONFIG_BITRATE_6780 & (id))   /*!< Check if ID indicates 6780kbits/s          */
-#define RFAL_ANALOG_CONFIG_ID_IS_1OF4(id)           (RFAL_ANALOG_CONFIG_BITRATE_1OF4 & (id))   /*!< Check if ID indicates 1 out of 4 bitrate   */
-#define RFAL_ANALOG_CONFIG_ID_IS_1OF256(id)         (RFAL_ANALOG_CONFIG_BITRATE_1OF256 & (id)) /*!< Check if ID indicates 1 out of 256 bitrate */
+#define RFAL_ANALOG_CONFIG_ID_IS_26(id)             (RFAL_ANALOG_CONFIG_BITRATE_26   & (id))   /*!< Check if ID indicates 1 out of 4 bitrate   */
+#define RFAL_ANALOG_CONFIG_ID_IS_1p6(id)            (RFAL_ANALOG_CONFIG_BITRATE_1p6  & (id))   /*!< Check if ID indicates 1 out of 256 bitrate */
 
 #define RFAL_ANALOG_CONFIG_ID_GET_DIRECTION(id)     (RFAL_ANALOG_CONFIG_DIRECTION_MASK & (id)) /*!< Get Direction of Configuration ID          */
 #define RFAL_ANALOG_CONFIG_ID_IS_TX(id)             (RFAL_ANALOG_CONFIG_TX & (id))             /*!< Check if id indicates TX                   */
@@ -251,13 +251,13 @@ bool rfalAnalogConfigIsReady( void );
  * 
  * NOTE: Function does not check the validity of the given Table contents
  * 
- * \param[in]  configTbl:     location of config Table to be loaded
- * \param[in]  configTblSize: size of the config Table to be loaded
+ * \param[in]  configTbl     : location of config Table to be loaded
+ * \param[in]  configTblSize : size of the config Table to be loaded
  * 
- * \return ERR_NONE    : if setting is updated
- * \return ERR_PARAM   : if configTbl is invalid
- * \return ERR_NOMEM   : if the given Table is bigger exceeds the max size
- * \return ERR_REQUEST : if the update Configuration Id is disabled
+ * \return RFAL_ERR_NONE    : if setting is updated
+ * \return RFAL_ERR_PARAM   : if configTbl is invalid
+ * \return RFAL_ERR_NOMEM   : if the given Table is bigger exceeds the max size
+ * \return RFAL_ERR_REQUEST : if the update Configuration Id is disabled
  *
  *****************************************************************************
  */
@@ -272,14 +272,14 @@ ReturnCode rfalAnalogConfigListWriteRaw( const uint8_t *configTbl, uint16_t conf
  * 
  * NOTE: Function does not check for the validity of the Register Address.
  * 
- * \param[in]  more: 0x00 indicates it is last Configuration ID settings; 
- *                   0x01 indicates more Configuration ID setting(s) are coming.
- * \param[in]  *config: reference to the configuration list of current Configuraiton ID.
+ * \param[in]  more    : 0x00 indicates it is last Configuration ID settings; 
+ *                       0x01 indicates more Configuration ID setting(s) are coming.
+ * \param[in]  *config : reference to the configuration list of current Configuraiton ID.
  *                          
- * \return ERR_PARAM   : if Configuration ID or parameter is invalid
- * \return ERR_NOMEM   : if LUT is full      
- * \return ERR_REQUEST : if the update Configuration Id is disabled               
- * \return ERR_NONE    : if setting is updated
+ * \return RFAL_ERR_PARAM   : if Configuration ID or parameter is invalid
+ * \return RFAL_ERR_NOMEM   : if LUT is full      
+ * \return RFAL_ERR_REQUEST : if the update Configuration Id is disabled               
+ * \return RFAL_ERR_NONE    : if setting is updated
  *
  *****************************************************************************
  */
@@ -291,13 +291,13 @@ ReturnCode rfalAnalogConfigListWrite( uint8_t more, const rfalAnalogConfig *conf
  *  
  * Reads the whole Analog Configuration Table in raw format
  * 
- * \param[out]   tblBuf: location to the buffer to place the Config Table 
- * \param[in]    tblBufLen: length of the buffer to place the Config Table
- * \param[out]   configTblSize: Config Table size 
+ * \param[out]   tblBuf        : location to the buffer to place the Config Table 
+ * \param[in]    tblBufLen     : length of the buffer to place the Config Table
+ * \param[out]   configTblSize : Config Table size 
  *                          
- * \return ERR_PARAM : if configTbl or configTblSize is invalid
- * \return ERR_NOMEM : if configTblSize is not enough for the whole table           
- * \return ERR_NONE  : if read is successful
+ * \return RFAL_ERR_PARAM : if configTbl or configTblSize is invalid
+ * \return RFAL_ERR_NOMEM : if configTblSize is not enough for the whole table           
+ * \return RFAL_ERR_NONE  : if read is successful
  * 
  *****************************************************************************
  */
@@ -309,14 +309,14 @@ ReturnCode rfalAnalogConfigListReadRaw( uint8_t *tblBuf, uint16_t tblBufLen, uin
  *  
  * Read the Analog Configuration Table
  * 
- * \param[in]     configOffset: offset to the next Configuration ID in the List Table to be read.   
- * \param[out]    more: 0x00 indicates it is last Configuration ID settings; 
- *                      0x01 indicates more Configuration ID setting(s) are coming.
- * \param[out]    config: configuration id, number of configuration sets and register-mask-value sets
- * \param[in]     numConfig: the remaining configuration settings space available;
+ * \param[in]  configOffset : offset to the next Configuration ID in the List Table to be read.   
+ * \param[out] more         : 0x00 indicates it is last Configuration ID settings; 
+ *                            0x01 indicates more Configuration ID setting(s) are coming.
+ * \param[out] config       : configuration id, number of configuration sets and register-mask-value sets
+ * \param[in]  numConfig    : the remaining configuration settings space available;
  *                          
- * \return ERR_NOMEM : if number of Configuration for respective Configuration ID is greater the the remaining configuration setting space available                
- * \return ERR_NONE  : if read is successful
+ * \return RFAL_ERR_NOMEM : if number of Configuration for respective Configuration ID is greater the the remaining configuration setting space available                
+ * \return RFAL_ERR_NONE  : if read is successful
  * 
  *****************************************************************************
  */
@@ -328,11 +328,11 @@ ReturnCode rfalAnalogConfigListRead( rfalAnalogConfigOffset *configOffset, uint8
  *  
  * Update the chip with indicated analog settings of indicated Configuration ID.
  *
- * \param[in]  configId: configuration ID
+ * \param[in]  configId : configuration ID
  *                            
- * \return ERR_PARAM if Configuration ID is invalid
- * \return ERR_INTERNAL if error updating setting to chip                   
- * \return ERR_NONE if new settings is applied to chip
+ * \return RFAL_ERR_PARAM    : if Configuration ID is invalid
+ * \return RFAL_ERR_INTERNAL : if error updating setting to chip                   
+ * \return RFAL_ERR_NONE     : if new settings is applied to chip
  *
  *****************************************************************************
  */
@@ -347,9 +347,9 @@ ReturnCode rfalSetAnalogConfig( rfalAnalogConfigId configId );
  *  
  * Update the chip with indicated analog settings of indicated Configuration ID.
  *
- * \param[in]  md:  RFAL mode format
- * \param[in]  br:  RFAL bit rate format
- * \param[in]  dir: Analog Config communication direction
+ * \param[in]  md  :  RFAL mode format
+ * \param[in]  br  :  RFAL bit rate format
+ * \param[in]  dir : Analog Config communication direction
  *                            
  * \return  Analog Config Mode ID
  *

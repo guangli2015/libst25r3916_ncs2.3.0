@@ -47,12 +47,28 @@
  ******************************************************************************
  */
  
-/*! Default DPO table */
+#if defined(ST25R3916)
+
+    /*! ST25R3916 Default DPO table */
 const uint8_t rfalDpoDefaultSettings [] = {
                 0x00, 255, 200,
                 0x01, 210, 150,
                 0x02, 160, 100,
                 0x03, 110, 50,
 };
+
+#elif defined(ST25R3916B)  /* ST25R3916B has an increased resolution on the driver resistance (d_res) */
+    
+    /*! ST25R3916B Default DPO table */
+    const uint8_t rfalDpoDefaultSettings [] = {
+                    0x00, 255, 200,
+                    0x05, 210, 150,
+                    0x09, 160, 100,
+                    0x0B, 110, 50,
+    };
+    
+#endif /* ST25R3916 */
+ 
+
 
 #endif /* ST25R3916_DPO_H */

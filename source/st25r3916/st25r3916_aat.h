@@ -36,8 +36,8 @@
 #ifndef ST25R3916_AAT_H
 #define ST25R3916_AAT_H
 
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 
 /*
 ******************************************************************************
@@ -89,6 +89,9 @@ struct st25r3916AatTuneResult{
  *  This function starts an antenna tuning procedure by modifying the serial 
  *  and parallel capacitors of the antenna matching circuit via the AAT_A
  *  and AAT_B registers. 
+ *  This function is best run if the field is already turned on.
+ *  When used on ST25R3916B with new rgs_am=1 it is necessary to turn on the
+ *  field before running this procedure or to set rgs_txonoff=0.
  *   
  *  \param[in] tuningParams : Input parameters for the tuning algorithm. If NULL
  *                            default values will be used.
@@ -96,9 +99,9 @@ struct st25r3916AatTuneResult{
  *                             no further information is returned, only registers
  *                             ST25R3916 (AAT_A,B) will be adapted.
  *
- *  \return ERR_IO    : Error during communication.
- *  \return ERR_PARAM : Invalid input parameters
- *  \return ERR_NONE  : No error.
+ *  \return RFAL_ERR_IO    : Error during communication.
+ *  \return RFAL_ERR_PARAM : Invalid input parameters
+ *  \return RFAL_ERR_NONE  : No error.
  *
  *****************************************************************************
  */

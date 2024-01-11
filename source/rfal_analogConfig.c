@@ -36,9 +36,13 @@
  */
 #include "rfal_analogConfig.h"
 #include "rfal_chip.h"
-#include "st_errno.h"
-#include "platform.h"
-#include "utils.h"
+#include "rfal_utils.h"
+#include "rfal_platform.h"
+
+
+#ifndef RFAL_FEATURE_DYNAMIC_ANALOG_CONFIG
+	#define RFAL_FEATURE_DYNAMIC_ANALOG_CONFIG     false       /*!<  Dynamic Analog Configs config missing. Disabled by default */
+#endif /* RFAL_FEATURE_DYNAMIC_ANALOG_CONFIG */
 
 
 /* Check whether the Default Analog settings are to be used or custom ones */
@@ -143,30 +147,30 @@ ReturnCode rfalAnalogConfigListWriteRaw( const uint8_t *configTbl, uint16_t conf
     if ( configTblSize >= RFAL_ANALOG_CONFIG_TBL_SIZE )
     {
         rfalAnalogConfigInitialize(); /* Revert to default Analog Configuration */
-        return ERR_NOMEM;
+        return RFAL_ERR_NOMEM;
     }
     
     /* Check for invalid parameters */
     if( (configTbl == NULL) || (configTblSize == 0U) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     /* NOTE: Function does not check for the validity of the Table contents (conf IDs, conf sets, register address)  */
-    ST_MEMCPY( gRfalAnalogConfig, configTbl, configTblSize );
+    RFAL_MEMCPY( gRfalAnalogConfig, configTbl, configTblSize );
     
     /* Update the total size of configuration settings */
     gRfalAnalogConfigMgmt.configTblSize = configTblSize;
         
     rfalAnalogConfigPtrUpdate(gRfalAnalogConfig);
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
     
 #else
     
     // If Analog Configuration Update is to be disabled
-    NO_WARNING(configTbl);
-    NO_WARNING(configTblSize);
-    return ERR_REQUEST;
+    RFAL_NO_WARNING(configTbl);
+    RFAL_NO_WARNING(configTblSize);
+    return RFAL_ERR_REQUEST;
     
 #endif /* RFAL_FEATURE_DYNAMIC_ANALOG_CONFIG */
 }
@@ -185,16 +189,17 @@ ReturnCode rfalAnalogConfigListWrite( uint8_t more, const rfalAnalogConfig *conf
         gRfalAnalogConfigMgmt.configTblSize = 0; // Clear the config List
     }
 
-    configId = GETU16(config->id);
+    configId = RFAL_GETU16(config->id);
     
     /* Check validity of the Configuration ID. */
-    if ( (RFAL_ANALOG_CONFIG_TECH_RFU <= RFAL_ANALOG_CONFIG_ID_GET_TECH(configId))
+    /* NOTE: Direction DPO uses 2msb of the Technology field as level indicator */
+    if ( ((RFAL_ANALOG_CONFIG_TECH_RFU <= RFAL_ANALOG_CONFIG_ID_GET_TECH(configId)) && (RFAL_ANALOG_CONFIG_ID_GET_DIRECTION(configId) != RFAL_ANALOG_CONFIG_DPO))
        ||((RFAL_ANALOG_CONFIG_BITRATE_6780 < RFAL_ANALOG_CONFIG_ID_GET_BITRATE(configId)) && (RFAL_ANALOG_CONFIG_BITRATE_53 > RFAL_ANALOG_CONFIG_ID_GET_BITRATE(configId)))
-       ||(RFAL_ANALOG_CONFIG_BITRATE_1OF256 < RFAL_ANALOG_CONFIG_ID_GET_BITRATE(configId))
+       ||(RFAL_ANALOG_CONFIG_BITRATE_1p6 < RFAL_ANALOG_CONFIG_ID_GET_BITRATE(configId))
        )
     {
         rfalAnalogConfigInitialize(); /* Revert to default Analog Configuration */
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
                     
     numConfig = config->num;
@@ -204,11 +209,11 @@ ReturnCode rfalAnalogConfigListWrite( uint8_t more, const rfalAnalogConfig *conf
     if ( RFAL_ANALOG_CONFIG_TBL_SIZE <= (gRfalAnalogConfigMgmt.configTblSize + configSize) )
     {
         rfalAnalogConfigInitialize(); /* Revert to default Analog Configuration */
-        return ERR_NOMEM;
+        return RFAL_ERR_NOMEM;
     }
     
     /* NOTE: Function does not check for the validity of the Register Address. */
-    ST_MEMCPY(&gRfalAnalogConfig[gRfalAnalogConfigMgmt.configTblSize], (const uint8_t*)config, configSize);
+    RFAL_MEMCPY(&gRfalAnalogConfig[gRfalAnalogConfigMgmt.configTblSize], (const uint8_t*)config, configSize);
     
     /* Increment the total size of configuration settings. */
     gRfalAnalogConfigMgmt.configTblSize += configSize;
@@ -219,14 +224,14 @@ ReturnCode rfalAnalogConfigListWrite( uint8_t more, const rfalAnalogConfig *conf
         rfalAnalogConfigPtrUpdate(gRfalAnalogConfig);
     }
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
     
 #else
     
     // If Analog Configuration Update is to be disabled
-    NO_WARNING(config);
-    NO_WARNING(more);
-    return ERR_DISABLED;
+    RFAL_NO_WARNING(config);
+    RFAL_NO_WARNING(more);
+    return RFAL_ERR_DISABLED;
     
 #endif /* RFAL_FEATURE_DYNAMIC_ANALOG_CONFIG */
     
@@ -237,35 +242,35 @@ ReturnCode rfalAnalogConfigListReadRaw( uint8_t *tblBuf, uint16_t tblBufLen, uin
     /* Check if the the current table will fit into the given buffer */
     if( tblBufLen < gRfalAnalogConfigMgmt.configTblSize )
     {
-        return ERR_NOMEM;
+        return RFAL_ERR_NOMEM;
     }
     
     /* Check for invalid parameters */
     if( configTblSize == NULL )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     /* Copy the whole Table to the given buffer */
     if( gRfalAnalogConfigMgmt.configTblSize > 0U )                     /* MISRA 21.18 */
     {
-        ST_MEMCPY( tblBuf, gRfalAnalogConfigMgmt.currentAnalogConfigTbl, gRfalAnalogConfigMgmt.configTblSize );
+        RFAL_MEMCPY( tblBuf, gRfalAnalogConfigMgmt.currentAnalogConfigTbl, gRfalAnalogConfigMgmt.configTblSize );
     }
     *configTblSize = gRfalAnalogConfigMgmt.configTblSize;
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 ReturnCode rfalAnalogConfigListRead( rfalAnalogConfigOffset *configOffset, uint8_t *more, rfalAnalogConfig *config, rfalAnalogConfigNum numConfig )
 {
     uint16_t configSize;
-    rfalAnalogConfigOffset offset = *configOffset;
+    const rfalAnalogConfigOffset offset = *configOffset;
     rfalAnalogConfigNum numConfigSet;
     
     /* Check if the number of register-mask-value settings for the respective Configuration ID will fit into the buffer passed in. */
     if (gRfalAnalogConfigMgmt.currentAnalogConfigTbl[offset + sizeof(rfalAnalogConfigId)] > numConfig)
     {
-        return ERR_NOMEM;
+        return RFAL_ERR_NOMEM;
     }
 
     /* Get the number of Configuration set */
@@ -273,7 +278,7 @@ ReturnCode rfalAnalogConfigListRead( rfalAnalogConfigOffset *configOffset, uint8
     
     /* Pass Configuration Register-Mask-Value sets */
     configSize = (sizeof(rfalAnalogConfigId) + sizeof(rfalAnalogConfigNum) + (uint16_t)(numConfigSet * sizeof(rfalAnalogConfigRegAddrMaskVal)));
-    ST_MEMCPY( (uint8_t*) config
+    RFAL_MEMCPY( (uint8_t*) config
               , &gRfalAnalogConfigMgmt.currentAnalogConfigTbl[offset]
               , configSize
               );
@@ -283,7 +288,7 @@ ReturnCode rfalAnalogConfigListRead( rfalAnalogConfigOffset *configOffset, uint8
     *more = (uint8_t)((*configOffset >= gRfalAnalogConfigMgmt.configTblSize) ? RFAL_ANALOG_CONFIG_UPDATE_LAST
                                                                              : RFAL_ANALOG_CONFIG_UPDATE_MORE); 
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 } /* rfalAnalogConfigListRead() */
 
 
@@ -292,12 +297,12 @@ ReturnCode rfalSetAnalogConfig( rfalAnalogConfigId configId )
     rfalAnalogConfigOffset configOffset = 0;
     rfalAnalogConfigNum numConfigSet;
     const rfalAnalogConfigRegAddrMaskVal *configTbl;
-    ReturnCode retCode = ERR_NONE;
+    ReturnCode retCode = RFAL_ERR_NONE;
     rfalAnalogConfigNum i;
     
     if (true != gRfalAnalogConfigMgmt.ready)
     {
-        return ERR_REQUEST;
+        return RFAL_ERR_REQUEST;
     }
     
     /* Search LUT for the specific Configuration ID. */
@@ -309,24 +314,24 @@ ReturnCode rfalSetAnalogConfig( rfalAnalogConfigId configId )
             break;
         }
         
-        configTbl = (rfalAnalogConfigRegAddrMaskVal *)( (uint32_t)gRfalAnalogConfigMgmt.currentAnalogConfigTbl + (uint32_t)configOffset); 
+        configTbl = (rfalAnalogConfigRegAddrMaskVal *)( (uintptr_t)gRfalAnalogConfigMgmt.currentAnalogConfigTbl + (uint32_t)configOffset); 
         /* Increment the offset to the next index to search from. */
         configOffset += (uint16_t)(numConfigSet * sizeof(rfalAnalogConfigRegAddrMaskVal)); 
         
         if ((gRfalAnalogConfigMgmt.configTblSize + 1U) < configOffset)
         {   /* Error check make sure that the we do not access outside the configuration Table Size */
-            return ERR_NOMEM;
+            return RFAL_ERR_NOMEM;
         }
         
         for ( i = 0; i < numConfigSet; i++)
         {
-            if( (GETU16(configTbl[i].addr) & RFAL_TEST_REG) != 0U )
+            if( (RFAL_GETU16(configTbl[i].addr) & RFAL_TEST_REG) != 0U )
             {
-                EXIT_ON_ERR(retCode, rfalChipChangeTestRegBits( (GETU16(configTbl[i].addr) & ~RFAL_TEST_REG), configTbl[i].mask, configTbl[i].val) );
+                RFAL_EXIT_ON_ERR(retCode, rfalChipChangeTestRegBits( (RFAL_GETU16(configTbl[i].addr) & ~RFAL_TEST_REG), configTbl[i].mask, configTbl[i].val) );
             }
             else
             {
-                EXIT_ON_ERR(retCode, rfalChipChangeRegBits( GETU16(configTbl[i].addr), configTbl[i].mask, configTbl[i].val) );
+                RFAL_EXIT_ON_ERR(retCode, rfalChipChangeRegBits( RFAL_GETU16(configTbl[i].addr), configTbl[i].mask, configTbl[i].val) );
             }
         }
         
@@ -457,7 +462,7 @@ static rfalAnalogConfigNum rfalAnalogConfigSearch( rfalAnalogConfigId configId, 
     while (i < gRfalAnalogConfigMgmt.configTblSize)
     {
         configTbl = &currentConfigTbl[i];
-        foundConfigId = GETU16(configTbl);
+        foundConfigId = RFAL_GETU16(configTbl);
         if (configId == (foundConfigId & configIdMaskVal))
         {
             *configOffset = (uint16_t)(i + sizeof(rfalAnalogConfigId) + sizeof(rfalAnalogConfigNum));

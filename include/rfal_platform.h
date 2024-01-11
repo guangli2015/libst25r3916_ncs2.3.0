@@ -55,6 +55,7 @@
 
 #include "st25r3916_spi.h"                                               /* Include any glue layer needed for interfacing with HAL */
 #include "pltf_timer.h"
+
 /*
 ******************************************************************************
 * GLOBAL DEFINES
@@ -141,7 +142,7 @@
 #define platformI2CSlaveAddrWR(add)                                                                            /*!< I2C Slave address for Write operation       */
 #define platformI2CSlaveAddrRD(add)                                                                            /*!< I2C Slave address for Read operation        */
 
-#define platformLog(...)                                                                                       /*!< Log  method                                 */
+#define platformLog(...)                                                                         /*!< Log  method                                 */
 
 #define platformIrqST25RSetCallback( cb )		   /*!< Sets ST25R ISR callback 					  */
 

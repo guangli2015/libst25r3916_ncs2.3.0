@@ -52,8 +52,8 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_nfc.h"
 #include "rfal_rf.h"
 
@@ -83,14 +83,14 @@
  * \param[in]  rxBufLen     : length of rxBuf
  * \param[out] rcvLen       : number of bytes received
  *  
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error 
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_TIMEOUT      : Timeout error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT      : Timeout error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerM24LRReadSingleBlock( uint8_t flags, const uint8_t* uid, uint16_t blockNum, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -111,14 +111,14 @@ ReturnCode rfalST25xVPollerM24LRReadSingleBlock( uint8_t flags, const uint8_t* u
  * \param[in]  rxBufLen     : length of rxBuf
  * \param[out] rcvLen       : number of bytes received
  *  
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error 
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_TIMEOUT      : Timeout error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT      : Timeout error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerM24LRFastReadSingleBlock( uint8_t flags, const uint8_t* uid, uint16_t blockNum, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -138,14 +138,14 @@ ReturnCode rfalST25xVPollerM24LRFastReadSingleBlock( uint8_t flags, const uint8_
  * \param[in]  wrData       : data to be written on the given block
  * \param[in]  blockLen     : number of bytes of a block
  *  
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error 
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_TIMEOUT      : Timeout error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT      : Timeout error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerM24LRWriteSingleBlock( uint8_t flags, const uint8_t* uid, uint16_t blockNum, const uint8_t* wrData, uint8_t blockLen );
@@ -167,14 +167,14 @@ ReturnCode rfalST25xVPollerM24LRWriteSingleBlock( uint8_t flags, const uint8_t* 
  * \param[in]  rxBufLen       : length of rxBuf
  * \param[out] rcvLen         : number of bytes received
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerM24LRReadMultipleBlocks( uint8_t flags, const uint8_t* uid, uint16_t firstBlockNum, uint8_t numOfBlocks, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -197,14 +197,14 @@ ReturnCode rfalST25xVPollerM24LRReadMultipleBlocks( uint8_t flags, const uint8_t
  * \param[in]  rxBufLen       : length of rxBuf
  * \param[out] rcvLen         : number of bytes received
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerM24LRFastReadMultipleBlocks( uint8_t flags, const uint8_t* uid, uint16_t firstBlockNum, uint8_t numOfBlocks, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -224,14 +224,14 @@ ReturnCode rfalST25xVPollerM24LRFastReadMultipleBlocks( uint8_t flags, const uin
  * \param[in]  rxBufLen     : length of rxBuf
  * \param[out] rcvLen       : number of bytes received
  *  
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error 
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_TIMEOUT      : Timeout error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT      : Timeout error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerFastReadSingleBlock( uint8_t flags, const uint8_t* uid, uint8_t blockNum, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -252,14 +252,14 @@ ReturnCode rfalST25xVPollerFastReadSingleBlock( uint8_t flags, const uint8_t* ui
  * \param[in]  rxBufLen       : length of rxBuf
  * \param[out] rcvLen         : number of bytes received
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerFastReadMultipleBlocks( uint8_t flags, const uint8_t* uid, uint8_t firstBlockNum, uint8_t numOfBlocks, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -279,14 +279,14 @@ ReturnCode rfalST25xVPollerFastReadMultipleBlocks( uint8_t flags, const uint8_t*
  * \param[in]  rxBufLen     : length of rxBuf
  * \param[out] rcvLen       : number of bytes received
  *  
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error 
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_TIMEOUT      : Timeout error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT      : Timeout error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerFastExtendedReadSingleBlock( uint8_t flags, const uint8_t* uid, uint16_t blockNum, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -307,14 +307,14 @@ ReturnCode rfalST25xVPollerFastExtendedReadSingleBlock( uint8_t flags, const uin
  * \param[in]  rxBufLen       : length of rxBuf
  * \param[out] rcvLen         : number of bytes received
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerFastExtReadMultipleBlocks( uint8_t flags, const uint8_t* uid, uint16_t firstBlockNum, uint16_t numOfBlocks, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -332,14 +332,14 @@ ReturnCode rfalST25xVPollerFastExtReadMultipleBlocks( uint8_t flags, const uint8
  * \param[in]  pointer        : Pointer address
  * \param[out] regValue       : Register value
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerReadConfiguration( uint8_t flags, const uint8_t* uid, uint8_t pointer, uint8_t* regValue );
@@ -357,14 +357,14 @@ ReturnCode rfalST25xVPollerReadConfiguration( uint8_t flags, const uint8_t* uid,
  * \param[in]  pointer        : Pointer address
  * \param[in]  regValue       : Register value
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerWriteConfiguration( uint8_t flags, const uint8_t* uid, uint8_t pointer, uint8_t regValue );
@@ -383,14 +383,14 @@ ReturnCode rfalST25xVPollerWriteConfiguration( uint8_t flags, const uint8_t* uid
  * \param[in]  pointer        : Pointer address
  * \param[out] regValue       : Register value
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerReadDynamicConfiguration( uint8_t flags, const uint8_t* uid, uint8_t pointer, uint8_t* regValue );
@@ -408,14 +408,14 @@ ReturnCode rfalST25xVPollerReadDynamicConfiguration( uint8_t flags, const uint8_
  * \param[in]  pointer        : Pointer address
  * \param[in]  regValue       : Register value
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerWriteDynamicConfiguration( uint8_t flags, const uint8_t* uid, uint8_t pointer, uint8_t regValue );
@@ -433,14 +433,14 @@ ReturnCode rfalST25xVPollerWriteDynamicConfiguration( uint8_t flags, const uint8
  * \param[in]  pointer        : Pointer address
  * \param[out] regValue       : Register value
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerFastReadDynamicConfiguration( uint8_t flags, const uint8_t* uid, uint8_t pointer, uint8_t* regValue );
@@ -458,14 +458,14 @@ ReturnCode rfalST25xVPollerFastReadDynamicConfiguration( uint8_t flags, const ui
  * \param[in]  pointer        : Pointer address
  * \param[in]  regValue       : Register value
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerFastWriteDynamicConfiguration( uint8_t flags, const uint8_t* uid, uint8_t pointer, uint8_t regValue );
@@ -484,17 +484,43 @@ ReturnCode rfalST25xVPollerFastWriteDynamicConfiguration( uint8_t flags, const u
  * \param[in]  pwd            : Password
  * \param[in]  pwdLen         : Password length
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerPresentPassword( uint8_t flags, const uint8_t* uid, uint8_t pwdNum, const uint8_t* pwd, uint8_t pwdLen );
+
+/*! 
+ *****************************************************************************
+ * \brief  NFC-V Poller Write Password
+ *  
+ * Sends the Write Password command
+ *
+ * \param[in]  flags          : Flags to be used: Sub-carrier; Data_rate; Option
+ *                              for NFC-Forum use: RFAL_NFCV_REQ_FLAG_DEFAULT
+ * \param[in]  uid            : UID of the device to be put to be read
+ *                               if not provided Select mode will be used 
+ * \param[in]  pwdNum         : Password number
+ * \param[in]  pwd            : Password
+ * \param[in]  pwdLen         : Password length
+ *  
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
+ *****************************************************************************
+ */
+ReturnCode rfalST25xVPollerWritePassword( uint8_t flags, const uint8_t* uid, uint8_t pwdNum, const uint8_t *pwd,  uint8_t pwdLen);
 
 /*! 
  *****************************************************************************
@@ -510,14 +536,14 @@ ReturnCode rfalST25xVPollerPresentPassword( uint8_t flags, const uint8_t* uid, u
  * \param[in]  rxBufLen       : length of rxBuf
  * \param[out] rcvLen         : number of bytes received
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerGetRandomNumber( uint8_t flags, const uint8_t* uid, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -534,14 +560,14 @@ ReturnCode rfalST25xVPollerGetRandomNumber( uint8_t flags, const uint8_t* uid, u
  *                               if not provided Select mode will be used 
  * \param[out] msgLen         : Message Length
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerReadMessageLength( uint8_t flags, const uint8_t* uid, uint8_t* msgLen );
@@ -558,14 +584,14 @@ ReturnCode rfalST25xVPollerReadMessageLength( uint8_t flags, const uint8_t* uid,
  *                               if not provided Select mode will be used 
  * \param[out] msgLen         : Message Length
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerFastReadMsgLength( uint8_t flags, const uint8_t* uid, uint8_t* msgLen );
@@ -594,14 +620,14 @@ ReturnCode rfalST25xVPollerFastReadMsgLength( uint8_t flags, const uint8_t* uid,
  * \param[in]  rxBufLen       : length of rxBuf
  * \param[out] rcvLen         : number of bytes received
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerReadMessage( uint8_t flags, const uint8_t* uid, uint8_t mbPointer, uint8_t numBytes, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -630,14 +656,14 @@ ReturnCode rfalST25xVPollerReadMessage( uint8_t flags, const uint8_t* uid, uint8
  * \param[in]  rxBufLen       : length of rxBuf
  * \param[out] rcvLen         : number of bytes received
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerFastReadMessage( uint8_t flags, const uint8_t* uid, uint8_t mbPointer, uint8_t numBytes, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -665,14 +691,14 @@ ReturnCode rfalST25xVPollerFastReadMessage( uint8_t flags, const uint8_t* uid, u
  * \param[out] txBuf          : buffer to used to build the Write Message command 
  * \param[in]  txBufLen       : length of txBuf
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerWriteMessage( uint8_t flags, const uint8_t* uid, uint8_t msgLen, const uint8_t* msgData, uint8_t* txBuf, uint16_t txBufLen );
@@ -700,14 +726,14 @@ ReturnCode rfalST25xVPollerWriteMessage( uint8_t flags, const uint8_t* uid, uint
  * \param[out] txBuf          : buffer to used to build the Write Message command 
  * \param[in]  txBufLen       : length of txBuf
  *  
- * \return ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_IO             : Generic internal error 
- * \return ERR_CRC            : CRC error detected
- * \return ERR_FRAMING        : Framing error detected
- * \return ERR_PROTO          : Protocol error detected
- * \return ERR_TIMEOUT        : Timeout error
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_IO             : Generic internal error 
+ * \return RFAL_ERR_CRC            : CRC error detected
+ * \return RFAL_ERR_FRAMING        : Framing error detected
+ * \return RFAL_ERR_PROTO          : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT        : Timeout error
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalST25xVPollerFastWriteMessage( uint8_t flags, const uint8_t* uid, uint8_t msgLen, const uint8_t* msgData, uint8_t* txBuf, uint16_t txBufLen );

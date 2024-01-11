@@ -69,7 +69,7 @@
 #include "logger.h"
 #include "st_errno.h"
 #include "utils.h"
-#include "platform.h"
+#include "rfal_platform.h"
 #include "rfal_nfca.h"
 #include "rfal_nfcb.h"
 #include "rfal_nfcf.h"

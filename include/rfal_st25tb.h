@@ -50,8 +50,8 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_rf.h"
 #include "rfal_nfcb.h"
 
@@ -105,8 +105,8 @@ typedef struct
  * This methods configures RFAL RF layer to perform as a 
  * ST25TB Poller/RW including all default timings
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerInitialize( void );
@@ -121,13 +121,13 @@ ReturnCode rfalSt25tbPollerInitialize( void );
  * 
  * \param[out] chipId : if successfully retrieved, the device's chip ID
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_RF_COLLISION : Collision detected one or more device in the field
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_RF_COLLISION : Collision detected one or more device in the field
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerCheckPresence( uint8_t *chipId );
@@ -146,13 +146,13 @@ ReturnCode rfalSt25tbPollerCheckPresence( uint8_t *chipId );
  * \param[out] st25tbDevList : ST35TB listener device info
  * \param[out] devCnt        : Devices found counter
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_RF_COLLISION : Collision detected one or more device in the field
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_RF_COLLISION : Collision detected one or more device in the field
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerCollisionResolution( uint8_t devLimit, rfalSt25tbListenDevice *st25tbDevList, uint8_t *devCnt );
@@ -167,12 +167,12 @@ ReturnCode rfalSt25tbPollerCollisionResolution( uint8_t devLimit, rfalSt25tbList
  *   
  * \param[out]  chipId      : chip ID of the device 
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerInitiate( uint8_t *chipId );
@@ -187,12 +187,12 @@ ReturnCode rfalSt25tbPollerInitiate( uint8_t *chipId );
  *   
  * \param[out]  chipId      : Chip ID of the device 
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerPcall( uint8_t *chipId );
@@ -209,12 +209,12 @@ ReturnCode rfalSt25tbPollerPcall( uint8_t *chipId );
  * \param[in]  slotNum      : Slot Number    
  * \param[out]  chipIdRes   : Chip ID of the device 
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerSlotMarker( uint8_t slotNum, uint8_t *chipIdRes );
@@ -231,12 +231,12 @@ ReturnCode rfalSt25tbPollerSlotMarker( uint8_t slotNum, uint8_t *chipIdRes );
  *   
  * \param[in]  chipId       : chip ID of the device to be selected
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerSelect( uint8_t chipId );
@@ -252,12 +252,12 @@ ReturnCode rfalSt25tbPollerSelect( uint8_t chipId );
  *
  * \param[out]  UID      : UID of the found device
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerGetUID( rfalSt25tbUID *UID );
@@ -272,12 +272,12 @@ ReturnCode rfalSt25tbPollerGetUID( rfalSt25tbUID *UID );
  * \param[in]   blockAddress : address of the block to be read
  * \param[out]  blockData    : location to place the data read from block
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerReadBlock( uint8_t blockAddress, rfalSt25tbBlock *blockData  );
@@ -292,12 +292,12 @@ ReturnCode rfalSt25tbPollerReadBlock( uint8_t blockAddress, rfalSt25tbBlock *blo
  * \param[in]  blockAddress : address of the block to be written
  * \param[in]  blockData    : data to be written on the block
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerWriteBlock( uint8_t blockAddress, const rfalSt25tbBlock *blockData  );
@@ -310,12 +310,12 @@ ReturnCode rfalSt25tbPollerWriteBlock( uint8_t blockAddress, const rfalSt25tbBlo
  * This method sends a completion command to the ST25TB. After the 
  * completion the card no longer will reply to any command.
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_PROTO        : Protocol error detected, invalid SENSB_RES received
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected, invalid SENSB_RES received
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerCompletion( void );
@@ -327,12 +327,12 @@ ReturnCode rfalSt25tbPollerCompletion( void );
  *  
  * This method sends a Reset to Inventory command to the ST25TB.
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_PROTO        : Protocol error detected, invalid SENSB_RES received
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected, invalid SENSB_RES received
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalSt25tbPollerResetToInventory( void );

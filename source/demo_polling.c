@@ -68,7 +68,6 @@ LOG_MODULE_DECLARE(st25r3916);
 #if RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE
 #include "demo_ce.h"
 #endif /* RFAL_FEATURE_LISTEN_MODE */
-#define platformLog LOG_ERR
 /*
 ******************************************************************************
 * GLOBAL DEFINES
@@ -816,7 +815,7 @@ void flash_setup(void)
 
 	if (!device_is_ready(flash_dev)) {
 		printk("%s: device not ready.\n", flash_dev->name);
-		return 0;
+		return;
 	}
 
 }
@@ -836,12 +835,16 @@ void writeToFlash(uint8_t *Pdata , size_t len)
 		printk("Flash erase succeeded!\n");
 	}
 
-	printk("Attempting to write %zu bytes\n", len);
-	rc = flash_write(flash_dev, SPI_FLASH_TEST_REGION_OFFSET, Pdata, len);
-	if (rc != 0) {
-		printk("Flash write failed! %d\n", rc);
-		return;
-	}
+    if(Pdata != NULL)
+	{
+        printk("Attempting to write %zu bytes\n", len);
+	    rc = flash_write(flash_dev, SPI_FLASH_TEST_REGION_OFFSET, Pdata, len);
+	    if (rc != 0) {
+		    printk("Flash write failed! %d\n", rc);
+		    return;
+	    }
+    }
+
 
 
 

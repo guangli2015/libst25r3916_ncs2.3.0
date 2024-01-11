@@ -47,7 +47,7 @@
 #include "st25r3916_led.h"
 #include "st25r3916.h"
 #include "st25r3916_dt.h"
-#include "utils.h"
+#include "rfal_utils.h"
 
 LOG_MODULE_DECLARE(st25r3916);
 
@@ -184,7 +184,7 @@ void st25r3916CheckForReceivedInterrupts( void )
   //  LOG_INF("I1");
     /* Initialize iregs */
     irqStatus = ST25R3916_IRQ_MASK_NONE;
-    ST_MEMSET( iregs, (int32_t)(ST25R3916_IRQ_MASK_ALL & 0xFFU), ST25R3916_INT_REGS_LEN );
+    RFAL_MEMSET( iregs, (int32_t)(ST25R3916_IRQ_MASK_ALL & 0xFFU), ST25R3916_INT_REGS_LEN );
     
      
     /* In case the IRQ is Edge (not Level) triggered read IRQs until done */

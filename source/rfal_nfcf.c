@@ -38,7 +38,7 @@
  ******************************************************************************
  */
 #include "rfal_nfcf.h"
-#include "utils.h"
+#include "rfal_utils.h"
 
 /*
  ******************************************************************************
@@ -72,10 +72,10 @@
 #define RFAL_NFCF_UPDATE_REQ_MAX_BLOCK             13U    /*!< Max Blocks number on Update request T3T 1.0  5.4.1.10 */
 
 
-/*! MRT Check | Uupdate = (Tt3t x ((A+1) + n (B+1)) x 4^E) + dRWTt3t    T3T  5.8
+/*! MRT Check | Update = (Tt3t x ((A+1) + n (B+1)) x 4^E) + dRWTt3t    T3T  5.8
     Max values used: A = 7 ; B = 7 ; E = 3 ; n = 15 (NFC Forum n = 15, JIS n = 32)
 */
-#define RFAL_NFCF_MRT_CHECK_UPDATE   ((4096 * (8 + (15 * 8)) * 64 ) + 16)
+#define RFAL_NFCF_MRT_CHECK_UPDATE   ((4096U * (8U + (15U * 8U)) * 64U ) + 16U)
 
 /*
  ******************************************************************************
@@ -185,7 +185,7 @@ static void rfalNfcfComputeValidSENF( rfalNfcfListenDevice *outDevInfo, uint8_t 
         gNfcf.CR.greedyF.pollFound--;
         
         /* MISRA 11.3 - Cannot point directly into different object type, use local copy */
-        ST_MEMCPY( (uint8_t*)&sensfCopy, (uint8_t*)&gNfcf.CR.greedyF.POLL_F[gNfcf.CR.greedyF.pollFound], sizeof(rfalNfcfSensfResBuf) );
+        RFAL_MEMCPY( (uint8_t*)&sensfCopy, (uint8_t*)&gNfcf.CR.greedyF.POLL_F[gNfcf.CR.greedyF.pollFound], sizeof(rfalNfcfSensfResBuf) );
         
         
         /* Point to received SENSF_RES */
@@ -195,7 +195,7 @@ static void rfalNfcfComputeValidSENF( rfalNfcfListenDevice *outDevInfo, uint8_t 
         /* Check for devices that are already in device list */
         for( tmpIdx = 0; tmpIdx < (*curDevIdx); tmpIdx++ )
         {
-            if( ST_BYTECMP( sensfBuf->SENSF_RES.NFCID2, outDevInfo[tmpIdx].sensfRes.NFCID2, RFAL_NFCF_NFCID2_LEN ) == 0 )
+            if( RFAL_BYTECMP( sensfBuf->SENSF_RES.NFCID2, outDevInfo[tmpIdx].sensfRes.NFCID2, RFAL_NFCF_NFCID2_LEN ) == 0 )
             {
                 duplicate = true;
                 break;
@@ -203,7 +203,7 @@ static void rfalNfcfComputeValidSENF( rfalNfcfListenDevice *outDevInfo, uint8_t 
         }
         
         /* If is a duplicate skip this (and not to overwrite)*/        
-        if(duplicate && !overwrite)
+        if(duplicate && (!overwrite))
         {
             continue;
         }
@@ -225,14 +225,14 @@ static void rfalNfcfComputeValidSENF( rfalNfcfListenDevice *outDevInfo, uint8_t 
         {
             /* overwrite deviceInfo/GRE_SENSF_RES with SENSF_RES */
             outDevInfo[tmpIdx].sensfResLen = (sensfBuf->LEN - RFAL_NFCF_LENGTH_LEN);
-            ST_MEMCPY( &outDevInfo[tmpIdx].sensfRes, &sensfBuf->SENSF_RES, outDevInfo[tmpIdx].sensfResLen );
+            RFAL_MEMCPY( &outDevInfo[tmpIdx].sensfRes, &sensfBuf->SENSF_RES, outDevInfo[tmpIdx].sensfResLen );
             continue;
         }
         else
         {
             /* fill deviceInfo/GRE_SENSF_RES with new SENSF_RES */
             outDevInfo[(*curDevIdx)].sensfResLen = (sensfBuf->LEN - RFAL_NFCF_LENGTH_LEN);
-            ST_MEMCPY( &outDevInfo[(*curDevIdx)].sensfRes, &sensfBuf->SENSF_RES, outDevInfo[(*curDevIdx)].sensfResLen );            
+            RFAL_MEMCPY( &outDevInfo[(*curDevIdx)].sensfRes, &sensfBuf->SENSF_RES, outDevInfo[(*curDevIdx)].sensfResLen );            
         }
         
         /* Check if this device supports NFC-DEP and signal it (ACTIVITY 1.1   9.3.6.63) */        
@@ -255,17 +255,17 @@ ReturnCode rfalNfcfPollerInitialize( rfalBitRate bitRate )
     
     if( (bitRate != RFAL_BR_212) && (bitRate != RFAL_BR_424) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
-    EXIT_ON_ERR( ret, rfalSetMode( RFAL_MODE_POLL_NFCF, bitRate, bitRate ) );
+    RFAL_EXIT_ON_ERR( ret, rfalSetMode( RFAL_MODE_POLL_NFCF, bitRate, bitRate ) );
     rfalSetErrorHandling( RFAL_ERRORHANDLING_NONE );
     
     rfalSetGT( RFAL_GT_NFCF );
     rfalSetFDTListen( RFAL_FDT_LISTEN_NFCF_POLLER );
     rfalSetFDTPoll( RFAL_FDT_POLL_NFCF_POLLER );
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 /*******************************************************************************/
@@ -279,7 +279,7 @@ ReturnCode rfalNfcfPollerCheckPresence( void )
 {
     ReturnCode ret;
     
-    EXIT_ON_ERR( ret, rfalNfcfPollerStartCheckPresence() );
+    RFAL_EXIT_ON_ERR( ret, rfalNfcfPollerStartCheckPresence() );
     rfalRunBlocking( ret, rfalNfcfPollerGetCheckPresenceStatus() );
     
     return ret;
@@ -309,7 +309,7 @@ ReturnCode rfalNfcfPollerCollisionResolution( rfalComplianceMode compMode, uint8
 {
     ReturnCode ret;
     
-    EXIT_ON_ERR( ret, rfalNfcfPollerStartCollisionResolution( compMode, devLimit, nfcfDevList, devCnt ) );
+    RFAL_EXIT_ON_ERR( ret, rfalNfcfPollerStartCollisionResolution( compMode, devLimit, nfcfDevList, devCnt ) );
     rfalRunBlocking( ret, rfalNfcfPollerGetCollisionResolutionStatus() );
     
     return ret;
@@ -321,7 +321,7 @@ ReturnCode rfalNfcfPollerStartCollisionResolution( rfalComplianceMode compMode, 
 {
     if( (nfcfDevList == NULL) || (devCnt == NULL) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
             
     *devCnt      = 0;
@@ -343,7 +343,7 @@ ReturnCode rfalNfcfPollerStartCollisionResolution( rfalComplianceMode compMode, 
     gNfcf.CR.devCnt      = devCnt;
     gNfcf.CR.state       = RFAL_NFCF_CR_POLL;
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 /*******************************************************************************/
@@ -376,7 +376,7 @@ ReturnCode rfalNfcfPollerGetCollisionResolutionStatus( void )
                 *gNfcf.CR.devCnt = 0;
             }
 
-            EXIT_ON_ERR( ret, rfalStartFeliCaPoll( RFAL_FELICA_16_SLOTS, 
+            RFAL_EXIT_ON_ERR( ret, rfalStartFeliCaPoll( RFAL_FELICA_16_SLOTS, 
                                                    RFAL_NFCF_SYSTEMCODE, 
                                                   (uint8_t)((gNfcf.CR.state == RFAL_NFCF_CR_POLL_SC) ? RFAL_FELICA_POLL_RC_SYSTEM_CODE : RFAL_FELICA_POLL_RC_NO_REQUEST), 
                                                   gNfcf.CR.greedyF.POLL_F, 
@@ -385,19 +385,15 @@ ReturnCode rfalNfcfPollerGetCollisionResolutionStatus( void )
                                                   &gNfcf.CR.greedyF.pollCollision ) );
             
             gNfcf.CR.state = RFAL_NFCF_CR_PARSE;
-            return ERR_BUSY;
+            return RFAL_ERR_BUSY;
 
             
         /*******************************************************************************/
         case RFAL_NFCF_CR_PARSE:
             
-            ret = rfalGetFeliCaPollStatus();
-            if( ret == ERR_BUSY )
-            {
-                return ret;
-            }
+            RFAL_EXIT_ON_BUSY( ret, rfalGetFeliCaPollStatus() );
             
-            if( ret == ERR_NONE )
+            if( ret == RFAL_ERR_NONE )
             {
                 /* Activity 2.1  9.3.6.5 - Symbol 4 Update device list */
                 rfalNfcfComputeValidSENF( gNfcf.CR.nfcfDevList, gNfcf.CR.devCnt, gNfcf.CR.devLimit, false, &gNfcf.CR.nfcDepFound );
@@ -405,14 +401,14 @@ ReturnCode rfalNfcfPollerGetCollisionResolutionStatus( void )
             
             /*******************************************************************************/
             /* Activity 2.1  9.3.6.6 - Symbol 5  Check if any device supports NFC DEP       */
-            if( gNfcf.CR.nfcDepFound && (gNfcf.CR.compMode == RFAL_COMPLIANCE_MODE_NFC) )
+            if( (gNfcf.CR.nfcDepFound) && (gNfcf.CR.compMode == RFAL_COMPLIANCE_MODE_NFC) )
             {
                 /* Send another poll request with RC = System Code */
                 gNfcf.CR.state = RFAL_NFCF_CR_POLL_SC;
                 
                 /* Set compliance mode to invalid (non NFC) to poll for NFC-DEP devices only once */
                 gNfcf.CR.compMode = RFAL_COMPLIANCE_MODE_EMV; 
-                return ERR_BUSY;
+                return RFAL_ERR_BUSY;
             }
             
             break;
@@ -424,7 +420,7 @@ ReturnCode rfalNfcfPollerGetCollisionResolutionStatus( void )
         
     }
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
     
 }
 
@@ -443,7 +439,7 @@ ReturnCode rfalNfcfPollerCheck( const uint8_t* nfcid2, const rfalNfcfServBlockLi
         (servBlock->numServ == 0U) || (servBlock->numServ > RFAL_NFCF_CHECK_REQ_MAX_SERV)    ||
         (rxBufLen < (RFAL_NFCF_LENGTH_LEN + RFAL_NFCF_CHECK_RES_MIN_LEN))                      )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     msgIt = 0;
@@ -453,7 +449,7 @@ ReturnCode rfalNfcfPollerCheck( const uint8_t* nfcid2, const rfalNfcfServBlockLi
     
     txBuf[msgIt++] = RFAL_NFCF_CMD_READ_WITHOUT_ENCRYPTION;                               /* Command Code    */
     
-    ST_MEMCPY( &txBuf[msgIt], nfcid2, RFAL_NFCF_NFCID2_LEN );                             /* NFCID2          */
+    RFAL_MEMCPY( &txBuf[msgIt], nfcid2, RFAL_NFCF_NFCID2_LEN );                             /* NFCID2          */
     msgIt += RFAL_NFCF_NFCID2_LEN;
     
     txBuf[msgIt++] = servBlock->numServ;                                                  /* NoS             */
@@ -482,22 +478,23 @@ ReturnCode rfalNfcfPollerCheck( const uint8_t* nfcid2, const rfalNfcfServBlockLi
     /* Transceive CHECK command/request                                            */
     ret = rfalTransceiveBlockingTxRx( txBuf, msgIt, rxBuf, rxBufLen, rcvdLen, RFAL_TXRX_FLAGS_DEFAULT, RFAL_NFCF_MRT_CHECK_UPDATE );
     
-    if( ret == ERR_NONE )
+    if( ret == RFAL_ERR_NONE )
     {
         /* Skip LEN byte */
         checkRes = (rxBuf + RFAL_NFCF_LENGTH_LEN);
-        
-        /* Check response length */
-        if( *rcvdLen < (RFAL_NFCF_LENGTH_LEN + RFAL_NFCF_CHECKUPDATE_RES_ST2_POS) )
+       
+        /* Check NFCID and response length    T3T v1.0   5.4.2.3 */
+        if( (RFAL_BYTECMP( nfcid2, &checkRes[RFAL_NFCF_CMD_LEN], RFAL_NFCF_NFCID2_LEN ) != 0) || 
+            (*rcvdLen < (RFAL_NFCF_LENGTH_LEN + RFAL_NFCF_CHECKUPDATE_RES_ST2_POS))            )
         {
-            ret = ERR_PROTO;
+            ret = RFAL_ERR_PROTO;
         }
         /* Check for a valid response */
         else if( (checkRes[RFAL_NFCF_CMD_POS] != (uint8_t)RFAL_NFCF_CMD_READ_WITHOUT_ENCRYPTION_RES) ||
                  (checkRes[RFAL_NFCF_CHECKUPDATE_RES_ST1_POS] != RFAL_NFCF_STATUS_FLAG_SUCCESS)      || 
                  (checkRes[RFAL_NFCF_CHECKUPDATE_RES_ST2_POS] != RFAL_NFCF_STATUS_FLAG_SUCCESS)        )
         {
-            ret = ERR_REQUEST;
+            ret = RFAL_ERR_REQUEST;
         }
         /* CHECK succesfull, remove header */
         else
@@ -506,7 +503,7 @@ ReturnCode rfalNfcfPollerCheck( const uint8_t* nfcid2, const rfalNfcfServBlockLi
             
             if( *rcvdLen > 0U )
             {
-                ST_MEMMOVE( rxBuf, &checkRes[RFAL_NFCF_CHECKUPDATE_RES_NOB_POS], (*rcvdLen) );
+                RFAL_MEMMOVE( rxBuf, &checkRes[RFAL_NFCF_CHECKUPDATE_RES_NOB_POS], (*rcvdLen) );
             }
         }
     }
@@ -531,7 +528,7 @@ ReturnCode rfalNfcfPollerUpdate( const uint8_t* nfcid2, const rfalNfcfServBlockL
         (servBlock->numServ == 0U)   || (servBlock->numServ > RFAL_NFCF_UPDATE_REQ_MAX_SERV)  ||
         (rxBufLen < (RFAL_NFCF_LENGTH_LEN + RFAL_NFCF_UPDATE_RES_MIN_LEN))                      )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     /* Calculate required txBuffer lenth      T3T 1.0  Table 9 */
@@ -542,7 +539,7 @@ ReturnCode rfalNfcfPollerUpdate( const uint8_t* nfcid2, const rfalNfcfServBlockL
     /* Check whether the provided buffer is sufficient for this request */
     if( txBufLen < auxLen )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
         
     msgIt = 0;
@@ -552,7 +549,7 @@ ReturnCode rfalNfcfPollerUpdate( const uint8_t* nfcid2, const rfalNfcfServBlockL
     
     txBuf[msgIt++] = RFAL_NFCF_CMD_WRITE_WITHOUT_ENCRYPTION;                              /* Command Code    */
     
-    ST_MEMCPY( &txBuf[msgIt], nfcid2, RFAL_NFCF_NFCID2_LEN );                             /* NFCID2          */
+    RFAL_MEMCPY( &txBuf[msgIt], nfcid2, RFAL_NFCF_NFCID2_LEN );                             /* NFCID2          */
     msgIt += RFAL_NFCF_NFCID2_LEN;
     
     txBuf[msgIt++] = servBlock->numServ;                                                  /* NoS             */
@@ -578,7 +575,7 @@ ReturnCode rfalNfcfPollerUpdate( const uint8_t* nfcid2, const rfalNfcfServBlockL
     }
     
     auxLen = ((uint16_t)servBlock->numBlock * RFAL_NFCF_BLOCK_LEN);
-    ST_MEMCPY( &txBuf[msgIt], blockData, auxLen );                                        /* Block Data      */
+    RFAL_MEMCPY( &txBuf[msgIt], blockData, auxLen );                                        /* Block Data      */
     msgIt += auxLen;
     
     
@@ -586,22 +583,23 @@ ReturnCode rfalNfcfPollerUpdate( const uint8_t* nfcid2, const rfalNfcfServBlockL
     /* Transceive UPDATE command/request                                           */
     ret = rfalTransceiveBlockingTxRx( txBuf, msgIt, rxBuf, rxBufLen, &rcvdLen, RFAL_TXRX_FLAGS_DEFAULT, RFAL_NFCF_MRT_CHECK_UPDATE );
     
-    if( ret == ERR_NONE )
+    if( ret == RFAL_ERR_NONE )
     {
         /* Skip LEN byte */
         updateRes = (rxBuf + RFAL_NFCF_LENGTH_LEN);
         
-        /* Check response length */
-        if( rcvdLen < (RFAL_NFCF_LENGTH_LEN + RFAL_NFCF_CHECKUPDATE_RES_ST2_POS) )
+        /* Check NFCID and response length    T3T v1.0   5.5.2.3 */
+        if( (RFAL_BYTECMP( nfcid2, &updateRes[RFAL_NFCF_CMD_LEN], RFAL_NFCF_NFCID2_LEN ) != 0) || 
+            (rcvdLen < (RFAL_NFCF_LENGTH_LEN + RFAL_NFCF_CHECKUPDATE_RES_ST2_POS))             )
         {
-            ret = ERR_PROTO;
+            ret = RFAL_ERR_PROTO;
         }
         /* Check for a valid response */
         else if( (updateRes[RFAL_NFCF_CMD_POS] != (uint8_t)RFAL_NFCF_CMD_WRITE_WITHOUT_ENCRYPTION_RES) ||
                  (updateRes[RFAL_NFCF_CHECKUPDATE_RES_ST1_POS] != RFAL_NFCF_STATUS_FLAG_SUCCESS)       ||
                  (updateRes[RFAL_NFCF_CHECKUPDATE_RES_ST2_POS] != RFAL_NFCF_STATUS_FLAG_SUCCESS)         )
         {
-            ret = ERR_REQUEST;
+            ret = RFAL_ERR_REQUEST;
         }
         else
         {
@@ -641,7 +639,7 @@ bool rfalNfcfListenerIsT3TReq( const uint8_t* buf, uint16_t bufLen, uint8_t* nfc
     /* Output NFID2 if requested */
     if( nfcid2 != NULL )
     {
-        ST_MEMCPY( nfcid2, &buf[RFAL_NFCF_CMD_LEN], RFAL_NFCF_NFCID2_LEN );
+        RFAL_MEMCPY( nfcid2, &buf[RFAL_NFCF_CMD_LEN], RFAL_NFCF_NFCID2_LEN );
     }
     
     return true;

@@ -398,6 +398,10 @@
  * GLOBAL DATA TYPES
  ******************************************************************************
  */
+ 
+ 
+#if defined(ST25R3916)
+/*  PRQA S 3674 2 # CERT ARR02 - Flexible array will be used with sizeof, on adding elements error-prone manual update of size would be required */
 /*  PRQA S 3406 1 # MISRA 8.6 - Externally generated table included by the library */   /*  PRQA S 1514 1 # MISRA 8.9 - Externally generated table included by the library */
 const uint8_t rfalAnalogConfigDefaultSettings[] = {
     
@@ -409,9 +413,9 @@ const uint8_t rfalAnalogConfigDefaultSettings[] = {
                         , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_d_res_mask, 0x00                                                                    /* Set RFO resistance Active Tx */
                         , ST25R3916_REG_RES_AM_MOD, 0xFF, 0x80                                                                                                 /* Use minimum non-overlap */
                         , ST25R3916_REG_FIELD_THRESHOLD_ACTV,   ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_mask, ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_105mV      /* Lower activation threshold (higher than deactivation)*/
-                        , ST25R3916_REG_FIELD_THRESHOLD_ACTV,   ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_mask, ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_105mV      /* Lower activation threshold (higher than deactivation)*/
+                        , ST25R3916_REG_FIELD_THRESHOLD_ACTV,   ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_mask, ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_205mV      /* Activation threshold as per DS (higher than deactivation)*/
                         , ST25R3916_REG_FIELD_THRESHOLD_DEACTV, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_trg_mask, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_trg_75mV   /* Lower deactivation threshold */
-                        , ST25R3916_REG_FIELD_THRESHOLD_DEACTV, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_rfe_mask, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_rfe_75mV   /* Lower deactivation threshold */
+                        , ST25R3916_REG_FIELD_THRESHOLD_DEACTV, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_rfe_mask, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_rfe_150mV  /* Lower deactivation threshold */
                         , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_lm_ext, 0x00                                                                            /* Disable External Load Modulation */
                         , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_lm_dri, ST25R3916_REG_AUX_MOD_lm_dri                                                    /* Use internal Load Modulation */
                         , ST25R3916_REG_PASSIVE_TARGET, ST25R3916_REG_PASSIVE_TARGET_fdel_mask, (5U<<ST25R3916_REG_PASSIVE_TARGET_fdel_shift)                  /* Adjust the FDT to be aligned with the bitgrid  */
@@ -605,7 +609,7 @@ const uint8_t rfalAnalogConfigDefaultSettings[] = {
 #endif /*RFAL_USE_COHE*/
 
 
-    , MODE_ENTRY_1_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCV | RFAL_ANALOG_CONFIG_BITRATE_1OF4 | RFAL_ANALOG_CONFIG_TX)
+    , MODE_ENTRY_1_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCV | RFAL_ANALOG_CONFIG_BITRATE_26 | RFAL_ANALOG_CONFIG_TX)
                       , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_ook                                              /* Use OOK */
                       )
 
@@ -705,5 +709,310 @@ const uint8_t rfalAnalogConfigDefaultSettings[] = {
                      )
 
 };
+
+/*******************************************************************************/
+#elif defined(ST25R3916B)
+
+/*  PRQA S 3674 2 # CERT ARR02 - Flexible array will be used with sizeof, on adding elements error-prone manual update of size would be required */
+/*  PRQA S 3406 1 # MISRA 8.6 - Externally generated table included by the library */   /*  PRQA S 1514 1 # MISRA 8.9 - Externally generated table included by the library */
+const uint8_t rfalAnalogConfigDefaultSettings[] = {
+    
+    /****** Default Analog Configuration for Chip-Specific Reset ******/
+    MODE_ENTRY_20_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_INIT)
+                        , ST25R3916_REG_IO_CONF1, (ST25R3916_REG_IO_CONF1_out_cl_mask | ST25R3916_REG_IO_CONF1_lf_clk_off), 0x07                               /* Disable MCU_CLK */
+                        , ST25R3916_REG_IO_CONF2, (ST25R3916_REG_IO_CONF2_miso_pd1 | ST25R3916_REG_IO_CONF2_miso_pd2 ), 0x18                                   /* SPI Pull downs */
+                        , ST25R3916_REG_IO_CONF2,  ST25R3916_REG_IO_CONF2_aat_en, ST25R3916_REG_IO_CONF2_aat_en                                                /* Enable AAT */
+                        , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_d_res_mask, 0x00                                                                    /* Set RFO resistance Active Tx */
+                        , ST25R3916_REG_RES_AM_MOD, ST25R3916_REG_RES_AM_MOD_fa3_f, 0x80                                                                       /* Use minimum non-overlap */
+                        , ST25R3916_REG_FIELD_THRESHOLD_ACTV,   ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_mask, ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_105mV      /* Lower activation threshold (higher than deactivation)*/
+                        , ST25R3916_REG_FIELD_THRESHOLD_ACTV,   ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_mask, ST25R3916_REG_FIELD_THRESHOLD_ACTV_rfe_205mV      /* Activation threshold as per DS (higher than deactivation)*/
+                        , ST25R3916_REG_FIELD_THRESHOLD_DEACTV, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_trg_mask, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_trg_75mV   /* Lower deactivation threshold */
+                        , ST25R3916_REG_FIELD_THRESHOLD_DEACTV, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_rfe_mask, ST25R3916_REG_FIELD_THRESHOLD_DEACTV_rfe_150mV  /* Lower deactivation threshold */
+                        , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_lm_ext, 0x00                                                                            /* Disable External Load Modulation */
+                        , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_lm_dri, ST25R3916_REG_AUX_MOD_lm_dri                                                    /* Use internal Load Modulation */
+                        , ST25R3916_REG_PASSIVE_TARGET, ST25R3916_REG_PASSIVE_TARGET_fdel_mask, (5U<<ST25R3916_REG_PASSIVE_TARGET_fdel_shift)                  /* Adjust the FDT to be aligned with the bitgrid  */
+                        , ST25R3916_REG_PT_MOD, (ST25R3916_REG_PT_MOD_ptm_res_mask | ST25R3916_REG_PT_MOD_pt_res_mask), 0x2e                                   /* Card Mode LMA */
+                        , ST25R3916_REG_EMD_SUP_CONF, ST25R3916_REG_EMD_SUP_CONF_rx_start_emv, ST25R3916_REG_EMD_SUP_CONF_rx_start_emv_on                      /* Enable start on first 4 bits */
+                        , ST25R3916_REG_ANT_TUNE_A, 0xFF, 0xC5                                                                                                 /* Set Antenna Tuning (Poller) */
+                        , ST25R3916_REG_ANT_TUNE_B, 0xFF, 0xE3                                                                                                 /* Set Antenna Tuning (Poller) */
+                        , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_rgs_am, ST25R3916_REG_AUX_MOD_rgs_am                                                    /* Enable AWS */
+                        , ST25R3916_REG_AWS_CONF1, ST25R3916_REG_AWS_CONF1_rgs_txonoff, ST25R3916_REG_AWS_CONF1_rgs_txonoff                                    /* Use AWS for field transition */
+                        , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_dis_reg_am, ST25R3916_REG_AUX_MOD_dis_reg_am                                            /* Set am_mode */
+                        , ST25R3916_REG_AWS_CONF1, ST25R3916_REG_AWS_CONF1_vddrf_cont, ST25R3916_REG_AWS_CONF1_vddrf_cont                                      /* Set vddrf_cont */
+                        )
+    
+    
+    
+    /****** Default Analog Configuration for Chip-Specific Poll Common ******/
+    , MODE_ENTRY_8_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_POLL_COMMON)
+                        , ST25R3916_REG_ANT_TUNE_A, 0xFF, 0xC5                                                                                  /* AAT Setting for R/W mode */
+                        , ST25R3916_REG_ANT_TUNE_B, 0xFF, 0xE3                                                                                  /* AAT Setting for R/W mode */
+                        , ST25R3916_REG_ISO14443A_NFC,  ST25R3916_REG_ISO14443A_NFC_p_len_mask, 0x00                                            /* Set p_len to default  */
+                        , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_rgs_am, ST25R3916_REG_AUX_MOD_rgs_am                                     /* Enable new AWS */
+                        , ST25R3916_REG_AWS_TIME1, ST25R3916_REG_AWS_TIME1_tmodsw1_mask, 0x01                                                   /* tmodsw1 */
+                        , ST25R3916_REG_AWS_TIME3, ST25R3916_REG_AWS_TIME3_tentx1_mask, 0x70                                                    /* Time in fc periods when driver modulation stops (tr_am dependent) */
+                        , ST25R3916_REG_AWS_TIME3, ST25R3916_REG_AWS_TIME3_tmods2_mask, 0x09                                                    /* Time in fc periods for hard switch between VDD_DR and VDD_AM */
+                        , ST25R3916_REG_AWS_TIME4, ST25R3916_REG_AWS_TIME4_tmodsw2_mask, 0x07                                                   /* Time in fc periods for soft switch between VDD_DR and VDD_AM */
+                        )
+                        
+                        
+    /****** Default Analog Configuration for Poll NFC-A Tx Common ******/
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCA | RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_ook                                              /* Use OOK modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0xF0                                                      /* Set modulation index for AWS */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, 0x00                                                           /* Nonsymmetrical shape(for OOK) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, ST25R3916_REG_AWS_CONF2_en_modsink                         /* Enable strong sink during AWS mod */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x08                                                     /* Medium AWS filter constant */
+                      )
+    
+
+    /****** Default Analog Configuration for Poll NFC-A Rx 106 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCA | RFAL_ANALOG_CONFIG_BITRATE_106 | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x08
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xED
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0x51
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x00
+                      )
+
+                      
+    /****** Default Analog Configuration for Poll NFC-A Rx 212 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCA | RFAL_ANALOG_CONFIG_BITRATE_212 | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x02
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xFD
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0x97
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x00
+                      )
+                      
+                      
+    /****** Default Analog Configuration for Poll NFC-A Rx 424 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCA | RFAL_ANALOG_CONFIG_BITRATE_424 | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x42
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xFD
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0xd7
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x00
+                      )
+        
+
+    /****** Default Analog Configuration for Poll NFC-A Tx 848 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCA | RFAL_ANALOG_CONFIG_BITRATE_848 | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_am                                              /* Use AM modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0xD0                                                     /* Set modulation index */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x00                                                    /* Fast AWS filter constant */
+                      , ST25R3916_REG_AWS_TIME3, ST25R3916_REG_AWS_TIME3_tentx1_mask, 0x30                                                     /* AWS enable TX (tentx1) */
+                      , ST25R3916_REG_AWS_TIME3, ST25R3916_REG_AWS_TIME3_tmods2_mask, 0x00                                                     /* AWS hard switch at rising edge (tmods2) :  0  fc perionds */
+                      , ST25R3916_REG_AWS_TIME4, ST25R3916_REG_AWS_TIME4_tmodsw2_mask, 0x02                                                    /* AWS soft switch at rising edge (tmodsw2) :  2  fc perionds */
+                      )
+                      
+                      
+    /****** Default Analog Configuration for Poll NFC-A Rx 848 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCA | RFAL_ANALOG_CONFIG_BITRATE_848 | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x42
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xFD
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0x47
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x00
+                      )
+                      
+                      
+    /****** Default Analog Configuration for Poll NFC-A Anticolision setting ******/
+    , MODE_ENTRY_1_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCA | RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_ANTICOL)
+                      , ST25R3916_REG_CORR_CONF1, ST25R3916_REG_CORR_CONF1_corr_s6, 0x00                                                            /* Different data slicer to improve collision detection */
+                      )
+
+
+    /****** Default Analog Configuration for Poll NFC-B Tx Common ******/
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCB | RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_am                                               /* Use AM modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0x40                                                      /* Set modulation index for AWS */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, ST25R3916_REG_AWS_CONF2_am_sym                                 /* AWS shaping symmetry (am_sym) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, 0x00                                                       /* Weak sink */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x08                                                     /* Medium AWS filter constant */
+                      )
+
+    /****** Default Analog Configuration for Poll NFC-B Rx 106 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCB | RFAL_ANALOG_CONFIG_BITRATE_106 | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x04
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xFD
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0x97
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x00
+                      )
+                      
+    /****** Default Analog Configuration for Poll NFC-B Rx 212 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCB | RFAL_ANALOG_CONFIG_BITRATE_212 | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x02
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xFD
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0x97
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x00
+                      )
+                      
+    /****** Default Analog Configuration for Poll NFC-B Rx 424 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCB | RFAL_ANALOG_CONFIG_BITRATE_424 | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x42
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xFD
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0xD7
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x00
+                      )
+                      
+                      
+    /****** Default Analog Configuration for Poll NFC-B Tx 848 ******/
+    , MODE_ENTRY_1_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCB | RFAL_ANALOG_CONFIG_BITRATE_848 | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x01                                                     /* Fast AWS filter constant */
+                      )                     
+
+
+    /****** Default Analog Configuration for Poll NFC-B Rx 848 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCB | RFAL_ANALOG_CONFIG_BITRATE_848 | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x42
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xFD
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0x47
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x00
+                      )
+
+
+
+    /****** Default Analog Configuration for Poll NFC-F Tx Common ******/
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCF | RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_am                                               /* Use AM modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0x40                                                      /* Set modulation index */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, ST25R3916_REG_AWS_CONF2_am_sym                                 /* AWS shaping symmetry (am_sym) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, 0x00                                                       /* Weak sink */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x08                                                     /* Medium AWS filter constant */
+                      )
+                      
+
+    /****** Default Analog Configuration for Poll NFC-F Rx Common ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCF | RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x13
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xFD
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0x54
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x00
+                      )
+
+                      
+    /****** Default Analog Configuration for Poll NFC-V Tx 26 ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCV | RFAL_ANALOG_CONFIG_BITRATE_26 | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_ook                                              /* Use OOK modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0xF0                                                      /* Set modulation index for AWS */
+                      , ST25R3916_REG_ISO14443A_NFC,  ST25R3916_REG_ISO14443A_NFC_p_len_mask, 0x1c                                              /* Set modulation pulse length p_len */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, 0x00                                                           /* Nonsymerical shape (for OOK) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, ST25R3916_REG_AWS_CONF2_en_modsink                         /* AWS enable strong sink (en_modsink) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x06                                                     /* Medium fast AWS filter constant */
+                      )
+                      
+                      
+    /****** Default Analog Configuration for Poll NFC-V Rx Common ******/
+    , MODE_ENTRY_6_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_NFCV | RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_RX)
+                      , ST25R3916_REG_RX_CONF1,   0xFF, 0x13
+                      , ST25R3916_REG_RX_CONF2,   0xFF, 0xED
+                      , ST25R3916_REG_RX_CONF3,   0xFF, 0x00
+                      , ST25R3916_REG_RX_CONF4,   0xFF, 0x00
+                      , ST25R3916_REG_CORR_CONF1, 0xFF, 0x13
+                      , ST25R3916_REG_CORR_CONF2, 0xFF, 0x01
+                      )
+                      
+                      
+    /****** Default Analog Configuration for Poll AP2P Tx 106 ******/
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_AP2P | RFAL_ANALOG_CONFIG_BITRATE_106 | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_ook                                              /* Use OOK modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0xF0                                                      /* Set modulation index for AWS */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, 0x00                                                           /* Nonsymerical shape (for OOK) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, ST25R3916_REG_AWS_CONF2_en_modsink                         /* AWS enable strong sink (en_modsink) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x08                                                     /* Medium AWS filter constant */
+                      )
+                      
+                      
+    /****** Default Analog Configuration for Poll AP2P Tx 212 ******/
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_AP2P | RFAL_ANALOG_CONFIG_BITRATE_212 | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_am                                               /* Use AM modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0x40                                                      /* Set AM modulation index */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, ST25R3916_REG_AWS_CONF2_am_sym                                 /* AWS shaping symmetry (am_sym) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, 0x00                                                       /* Weak sink */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x08                                                     /* Medium AWS filter constant */
+                      )
+                      
+                      
+    /****** Default Analog Configuration for Poll AP2P Tx 424 ******/
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_POLL | RFAL_ANALOG_CONFIG_TECH_AP2P | RFAL_ANALOG_CONFIG_BITRATE_424 | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_am                                               /* Use AM modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0x40                                                      /* Set AM modulation index */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, ST25R3916_REG_AWS_CONF2_am_sym                                 /* AWS shaping symmetry (am_sym) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, 0x00                                                       /* Weak sink */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x08                                                     /* Medium AWS filter constant */
+                      )
+                      
+                      
+    /****** Default Analog Configuration for Listen On ******/
+    , MODE_ENTRY_3_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_LISTEN_ON)
+                        , ST25R3916_REG_ANT_TUNE_A, 0xFF, 0x00                                                                                  /* Set Antenna Tuning (Listener) */
+                        , ST25R3916_REG_ANT_TUNE_B, 0xFF, 0x00                                                                                  /* Set Antenna Tuning (Listener) */
+                        , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_rgs_am, 0x00                                                             /* Disable AWS in Listen mode */
+                      )
+                                                                                                                                                
+                                                                                                                                                
+    /****** Default Analog Configuration for Listen AP2P Tx Common ******/
+    , MODE_ENTRY_3_REG( (RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_AP2P | RFAL_ANALOG_CONFIG_BITRATE_COMMON | RFAL_ANALOG_CONFIG_TX)
+                        , ST25R3916_REG_ANT_TUNE_A, 0xFF, 0xC5                                                                                  /* Set Antenna Tuning (Poller) */
+                        , ST25R3916_REG_ANT_TUNE_B, 0xFF, 0xE3                                                                                  /* Set Antenna Tuning (Poller) */
+                        , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_rgs_am, ST25R3916_REG_AUX_MOD_rgs_am                                     /* Enable AWS for AP2P  */
+                      )
+
+                                                                                                                                                
+    /****** Default Analog Configuration for Listen AP2P Tx 106 ******/
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_AP2P | RFAL_ANALOG_CONFIG_BITRATE_106 | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_ook                                              /* Use OOK modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0xF0                                                      /* Set modulation index for AWS */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, 0x00                                                           /* Nonsymerical shape (for OOK) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, ST25R3916_REG_AWS_CONF2_en_modsink                         /* AWS enable strong sink (en_modsink) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x08                                                     /* Medium AWS filter constant */
+                      )
+                                                                                                                                                
+    /****** Default Analog Configuration for Listen AP2P Tx 212 ******/
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_AP2P | RFAL_ANALOG_CONFIG_BITRATE_212 | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_am                                               /* Use AM modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0x40                                                      /* Set AM modulation index */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, ST25R3916_REG_AWS_CONF2_am_sym                                 /* AWS shaping symmetry (am_sym) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, 0x00                                                       /* Weak sink */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x08                                                     /* Medium AWS filter constant */
+                     )
+                                                                                                                                                
+    /****** Default Analog Configuration for Listen AP2P Tx 424 ******/
+    , MODE_ENTRY_5_REG( (RFAL_ANALOG_CONFIG_LISTEN | RFAL_ANALOG_CONFIG_TECH_AP2P | RFAL_ANALOG_CONFIG_BITRATE_424 | RFAL_ANALOG_CONFIG_TX)
+                      , ST25R3916_REG_MODE, ST25R3916_REG_MODE_tr_am, ST25R3916_REG_MODE_tr_am_am                                               /* Use AM modulation */
+                      , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_am_mod_mask, 0x40                                                      /* Set AM modulation index */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_sym, ST25R3916_REG_AWS_CONF2_am_sym                                 /* AWS shaping symmetry (am_sym) */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_en_modsink, 0x00                                                       /* Weak sink */
+                      , ST25R3916_REG_AWS_CONF2, ST25R3916_REG_AWS_CONF2_am_filt_mask, 0x08                                                     /* Medium AWS filter constant */
+                     )
+                     
+    /****** Default Analog Configuration for Wake-up On ******/
+    , MODE_ENTRY_1_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_WAKEUP_ON)
+                      , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_rgs_am, 0x00                                                               /* Disable AWS during WU  */
+                     )
+                     
+    /****** Default Analog Configuration for Wake-up Off ******/
+    , MODE_ENTRY_1_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_WAKEUP_OFF)
+                      , ST25R3916_REG_AUX_MOD, ST25R3916_REG_AUX_MOD_rgs_am, ST25R3916_REG_AUX_MOD_rgs_am                                       /* Re-enable AWS after WU */
+                     )                     
+
+};
+
+#endif /* ST25R3916|B */
 
 #endif /* ST25R3916_ANALOGCONFIG_H */

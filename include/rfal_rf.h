@@ -77,8 +77,8 @@
 * INCLUDES
 ******************************************************************************
 */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_features.h"
 
 /*
@@ -86,7 +86,7 @@
 * GLOBAL DEFINES
 ******************************************************************************
 */
-#define RFAL_VERSION                               0x020400U                                    /*!< RFAL Current Version: v2.4.0                      */
+#define RFAL_VERSION                               0x020800U                                    /*!< RFAL Current Version: v2.6.1 (internal)           */
 
 #define RFAL_FWT_NONE                              0xFFFFFFFFU                                  /*!< Disabled FWT: Wait forever for a response         */
 #define RFAL_GT_NONE                               RFAL_TIMING_NONE                             /*!< Disabled GT: No GT will be applied after Field On */
@@ -151,7 +151,7 @@
 #define rfalIsModeActiveComm( md )           ( ((md) == RFAL_MODE_POLL_ACTIVE_P2P) || ((md) == RFAL_MODE_LISTEN_ACTIVE_P2P) )                          /*!< Checks if mode md is Active Communication  */
 #define rfalIsModePassiveComm( md )          ( !rfalIsModeActiveComm(md) )                                                                             /*!< Checks if mode md is Passive Communication */
 #define rfalIsModePassiveListen( md )        ( ((md) == RFAL_MODE_LISTEN_NFCA) || ((md) == RFAL_MODE_LISTEN_NFCB) || ((md) == RFAL_MODE_LISTEN_NFCF) ) /*!< Checks if mode md is Passive Listen        */
-#define rfalIsModePassivePoll( md )          ( rfalIsModePassiveComm(md) && !rfalIsModePassiveListen(md) )                                             /*!< Checks if mode md is Passive Poll          */
+#define rfalIsModePassivePoll( md )          ( rfalIsModePassiveComm(md) && (!rfalIsModePassiveListen(md)) )                                           /*!< Checks if mode md is Passive Poll          */
 
 
 #define rfalConv1fcTo8fc( t )                (uint32_t)( (uint32_t)(t) / RFAL_1FC_IN_8FC )                               /*!< Converts the given t from 1/fc to 8/fc     */
@@ -182,7 +182,7 @@
 #define rfalConvBytesToBits( n )             (uint32_t)( (uint32_t)(n) * (RFAL_BITS_IN_BYTE) )                           /*!< Converts the given n from bytes to bits    */
 
 
-#define rfalRunBlocking( e, fn )              do{ (e)=(fn); rfalWorker(); }while( (e) == ERR_BUSY )                      /*!< Macro used for the blocking methods        */
+#define rfalRunBlocking( e, fn )              do{ (e)=(fn); rfalWorker(); }while( (e) == RFAL_ERR_BUSY )                      /*!< Macro used for the blocking methods        */
 
 
 /*! Computes a Transceive context \a ctx with default flags and the lengths 
@@ -366,17 +366,19 @@ enum {
     RFAL_TXRX_FLAGS_CRC_TX_AUTO      = (0U<<0),   /*!< CRC will be generated automatic upon transmission                                     */
     RFAL_TXRX_FLAGS_CRC_TX_MANUAL    = (1U<<0),   /*!< CRC was calculated manually, included in txBuffer                                     */
     RFAL_TXRX_FLAGS_CRC_RX_KEEP      = (1U<<1),   /*!< Upon Reception keep the CRC in rxBuffer (reflected on rcvd length)                    */
-    RFAL_TXRX_FLAGS_CRC_RX_REMV      = (0U<<1),   /*!< Enable CRC check and remove the CRC from rxBuffer                                     */
+    RFAL_TXRX_FLAGS_CRC_RX_REMV      = (0U<<1),   /*!< Remove the CRC from rxBuffer                                                          */
     RFAL_TXRX_FLAGS_NFCIP1_ON        = (1U<<2),   /*!< Enable NFCIP1 mode: Add SB(F0) and LEN bytes during Tx and skip SB(F0) byte during Rx */
     RFAL_TXRX_FLAGS_NFCIP1_OFF       = (0U<<2),   /*!< Disable NFCIP1 mode: do not append protocol bytes while Tx nor skip while Rx          */
     RFAL_TXRX_FLAGS_AGC_OFF          = (1U<<3),   /*!< Disable Automatic Gain Control, improving multiple devices collision detection        */
     RFAL_TXRX_FLAGS_AGC_ON           = (0U<<3),   /*!< Enable Automatic Gain Control, improving single device reception                      */
-    RFAL_TXRX_FLAGS_PAR_RX_KEEP      = (1U<<4),   /*!< Disable Parity and CRC check and keep the Parity and CRC bits in the received buffer  */
+    RFAL_TXRX_FLAGS_PAR_RX_KEEP      = (1U<<4),   /*!< Disable Parity check and keep the Parity and CRC bits in the received buffer          */
     RFAL_TXRX_FLAGS_PAR_RX_REMV      = (0U<<4),   /*!< Enable Parity check and remove the parity bits from the received buffer               */
     RFAL_TXRX_FLAGS_PAR_TX_NONE      = (1U<<5),   /*!< Disable automatic Parity generation (ISO14443A) and use the one provided in the buffer*/
     RFAL_TXRX_FLAGS_PAR_TX_AUTO      = (0U<<5),   /*!< Enable automatic Parity generation (ISO14443A)                                        */
     RFAL_TXRX_FLAGS_NFCV_FLAG_MANUAL = (1U<<6),   /*!< Disable automatic adaption of flag byte (ISO15693) according to current comm params   */
     RFAL_TXRX_FLAGS_NFCV_FLAG_AUTO   = (0U<<6),   /*!< Enable automatic adaption of flag byte (ISO115693) according to current comm params   */
+    RFAL_TXRX_FLAGS_CRC_RX_MANUAL    = (1U<<7),   /*!< Disable automatic CRC check                                                           */
+    RFAL_TXRX_FLAGS_CRC_RX_AUTO      = (0U<<7),   /*!< Enable automatic CRC check                                                            */
 };
 
 
@@ -524,6 +526,12 @@ typedef struct
     uint8_t          SENSF_RES[RFAL_LM_SENSF_RES_LEN];  /*!< SENSF_RES                               */
 } rfalLmConfPF;
 
+/*! RFAL low power modes    */
+typedef enum {
+    RFAL_LP_MODE_PD  = 0,    /*!< Set RF Chip in Power Down state                                      */
+    RFAL_LP_MODE_HR  = 1     /*!< Set RF Chip in Hold Reset state (available for specific devices)     */
+} rfalLpMode;
+
 /*******************************************************************************/
 
 
@@ -562,8 +570,8 @@ typedef enum
  * \warning rfalAnalogConfigInitialize() should be called before so that 
  *           the Analog config table has been previously initialized.
  *           
- * \return ERR_HW_MISMATCH  : Expected HW do not match or communication error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_HW_MISMATCH  : Expected HW do not match or communication error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalInitialize( void );
@@ -576,8 +584,8 @@ ReturnCode rfalInitialize( void );
  * Performs necessary calibration of RF chip in case it is indicated by current
  * register settings. E.g. antenna calibration and regulator calibration
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized
+ * \return RFAL_ERR_NONE         : No error
  * 
  *****************************************************************************
  */
@@ -593,8 +601,8 @@ ReturnCode rfalCalibrate( void );
  * \param[out]  result : the result of the calibrate antenna in mV
  *                       NULL if result not requested
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized
+ * \return RFAL_ERR_NONE         : No error
  * 
  *****************************************************************************
  */
@@ -660,7 +668,7 @@ void rfalSetPostTxRxCallback( rfalPostTxRxCallback pFunc );
  *  
  * Deinitializes RFAL layer and the ST25R391x
  *
- * \return ERR_NONE : No error
+ * \return RFAL_ERR_NONE : No error
  * 
  *****************************************************************************
  */
@@ -686,9 +694,9 @@ ReturnCode rfalDeinitialize( void );
  * \see rfalIsGTExpired
  * \see rfalMode
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_NONE         : No error
  * 
  *****************************************************************************
  */
@@ -727,10 +735,10 @@ rfalMode rfalGetMode( void );
  * \see rfalMode
  * \see rfalBitRate
  *
- * \return ERR_WRONG_STATE     : RFAL not initialized
- * \return ERR_PARAM           : Invalid parameter
- * \return ERR_NOT_IMPLEMENTED : Mode not implemented
- * \return ERR_NONE            : No error
+ * \return RFAL_ERR_WRONG_STATE     : RFAL not initialized
+ * \return RFAL_ERR_PARAM           : Invalid parameter
+ * \return RFAL_ERR_NOT_IMPLEMENTED : Mode not implemented
+ * \return RFAL_ERR_NONE            : No error
  * 
  *****************************************************************************
  */
@@ -752,8 +760,8 @@ ReturnCode rfalSetBitRate( rfalBitRate txBR, rfalBitRate rxBR );
  * \see rfalSetBitRate
  * \see rfalBitRate
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalGetBitRate( rfalBitRate *txBR, rfalBitRate *rxBR );
@@ -951,8 +959,8 @@ bool rfalIsGTExpired( void );
  * After Field On, if GT was set before, it starts the GT timer to be 
  * used on the following communications.
  *  
- * \return ERR_RF_COLLISION : External field detected
- * \return ERR_NONE         : Field turned On
+ * \return RFAL_ERR_RF_COLLISION : External field detected
+ * \return RFAL_ERR_NONE         : Field turned On
  *
  *****************************************************************************
  */
@@ -965,7 +973,7 @@ ReturnCode rfalFieldOnAndStartGT( void );
  *  
  * Turns the Field Off  
  *   
- * \return ERR_NONE : Field turned Off
+ * \return RFAL_ERR_NONE : Field turned Off
  *****************************************************************************
  */
 ReturnCode rfalFieldOff( void );
@@ -984,7 +992,7 @@ ReturnCode rfalFieldOff( void );
  * Output and input buffers have to be passed and all other details prior to 
  * the Transceive itself has been started
  * 
- * This method only sets the context, once set rfalWorker has
+ * This method only sets the context. Once set, rfalWorker has
  * to be executed until is done
  * 
  * \param[in]  ctx : the context for the following Transceive
@@ -992,9 +1000,9 @@ ReturnCode rfalFieldOff( void );
  * \see  rfalWorker
  * \see  rfalGetTransceiveStatus
  *
- * \return ERR_NONE        : Done with no error
- * \return ERR_WRONG_STATE : Not initialized properly 
- * \return ERR_PARAM       : Invalid parameter or configuration
+ * \return RFAL_ERR_NONE        : Done with no error
+ * \return RFAL_ERR_WRONG_STATE : Not initialized properly 
+ * \return RFAL_ERR_PARAM       : Invalid parameter or configuration
  *****************************************************************************
  */
 ReturnCode rfalStartTransceive( const rfalTransceiveContext *ctx );
@@ -1018,16 +1026,16 @@ rfalTransceiveState rfalGetTransceiveState( void );
  *  
  * Gets current Transceive status
  *
- * \return  ERR_NONE         : Transceive done with no error
- * \return  ERR_BUSY         : Transceive ongoing
- * \return  ERR_XXXX         : Error occurred
- * \return  ERR_TIMEOUT      : No response
- * \return  ERR_FRAMING      : Framing error detected
- * \return  ERR_PAR          : Parity error detected
- * \return  ERR_CRC          : CRC error detected
- * \return  ERR_LINK_LOSS    : Link Loss - External Field is Off
- * \return  ERR_RF_COLLISION : Collision detected
- * \return  ERR_IO           : Internal error
+ * \return  RFAL_ERR_NONE         : Transceive done with no error
+ * \return  RFAL_ERR_BUSY         : Transceive ongoing
+ * \return  RFAL_ERR_XXXX         : Error occurred
+ * \return  RFAL_ERR_TIMEOUT      : No response
+ * \return  RFAL_ERR_FRAMING      : Framing error detected
+ * \return  RFAL_ERR_PAR          : Parity error detected
+ * \return  RFAL_ERR_CRC          : CRC error detected
+ * \return  RFAL_ERR_LINK_LOSS    : Link Loss - External Field is Off
+ * \return  RFAL_ERR_RF_COLLISION : Collision detected
+ * \return  RFAL_ERR_IO           : Internal error
  *****************************************************************************
  */
 ReturnCode rfalGetTransceiveStatus( void );
@@ -1067,12 +1075,25 @@ bool rfalIsTransceiveInRx( void );
  *
  * \param[out]  rssi : RSSI value
  *
- * \return  ERR_NOTSUPP : Feature not supported
- * \return  ERR_PARAM   : Invalid parameter
- * \return  ERR_NONE    : No error
+ * \return  RFAL_ERR_NOTSUPP : Feature not supported
+ * \return  RFAL_ERR_PARAM   : Invalid parameter
+ * \return  RFAL_ERR_NONE    : No error
  *****************************************************************************
  */
 ReturnCode rfalGetTransceiveRSSI( uint16_t *rssi );
+
+
+/*! 
+ *****************************************************************************
+ * \brief  Is Transceive Subcarrier Detected
+ *  
+ * Checks on the last executed Transceive a subcarrier was detected
+ *
+ * \return true   Subcarrier was detected
+ * \return false  No subcarrier detected | Not supported
+ *****************************************************************************
+ */
+bool rfalIsTransceiveSubcDetected( void );
 
 
 /*! 
@@ -1096,25 +1117,23 @@ void rfalWorker( void );
  *****************************************************************************
  *  \brief Transceives an ISO14443A ShortFrame  
  *  
- *  Sends REQA to detect if there is any PICC in the field 
+ *  Sends REQA or WUPA to detect if there is any PICC in the field 
  *
  * \param[in]  txCmd:     Command to be sent:
  *                           0x52 WUPA / ALL_REQ
  *                           0x26 REQA / SENS_REQ
- *                           
- * \param[in]  txCmd    : type of short frame to be sent REQA or WUPA                          
  * \param[out] rxBuf    : buffer to place the response
- * \param[in]  rxBufLen : length of rxBuf
- * \param[out] rxRcvdLen: received length
+ * \param[in]  rxBufLen : length of rxBuf in bytes
+ * \param[out] rxRcvdLen: received length in bits
  * \param[in]  fwt      : Frame Waiting Time in 1/fc
  * 
  * \warning If fwt is set to RFAL_FWT_NONE it will make endlessly for 
  *         a response, which on a blocking method may not be the 
  *         desired usage 
  * 
- * \return ERR_NONE         : If there is response
- * \return ERR_TIMEOUT      : If there is no response
- * \return ERR_RF_COLLISION : A collision was detected
+ * \return RFAL_ERR_NONE         : If there is response
+ * \return RFAL_ERR_TIMEOUT      : If there is no response
+ * \return RFAL_ERR_RF_COLLISION : A collision was detected
  *  
  *****************************************************************************
  */
@@ -1125,23 +1144,61 @@ ReturnCode rfalISO14443ATransceiveShortFrame( rfal14443AShortFrameCmd txCmd, uin
  *****************************************************************************
  * \brief Sends an ISO14443A Anticollision Frame 
  * 
- * This is use to perform ISO14443A anti-collision. 
+ * This is used to perform ISO14443A anti-collision. 
  * \note Anticollision is sent without CRC
  * 
  * 
- * \param[in]   buf        : reference to ANTICOLLISION command (with known UID if any) to be sent (also out param)
- *                           reception will be place on this buf after bytesToSend 
- * \param[in]   bytesToSend: reference number of full bytes to be sent (including CMD byte and SEL_PAR)
- *                           if a collision occurs will contain the number of clear bytes  
- * \param[in]   bitsToSend : reference to number of bits (0-7) to be sent; and received (also out param)
- *                           if a collision occurs will indicate the number of clear bits (also out param)
- * \param[out]  rxLength   : reference to the return the received length
- * \param[in]   fwt        : Frame Waiting Time in 1/fc
+ * \param[in,out] buf        : reference to ANTICOLLISION command (with known UID if any) to be sent (also out param)
+ *                             reception will be place on this buf after bytesToSend 
+ *                             buffer must be capable of holding a whole Anticollison frame (rfalNfcaSelReq)
+ * \param[in,out] bytesToSend: reference number of full bytes to be sent (including CMD byte and SEL_PAR)
+ *                             if a collision occurs will contain the number of clear bytes  
+ * \param[in,out] bitsToSend : reference to number of bits (0-7) to be sent; and received (also out param)
+ *                             if a collision occurs will indicate the number of clear bits (also out param)
+ * \param[out]    rxLength   : reference to the return the received length in bits
+ * \param[in]     fwt        : Frame Waiting Time in 1/fc
  * 
- * \return ERR_NONE if there is no error
+ * \return RFAL_ERR_NONE if there is no error
  *****************************************************************************
  */
 ReturnCode rfalISO14443ATransceiveAnticollisionFrame( uint8_t *buf, uint8_t *bytesToSend, uint8_t *bitsToSend, uint16_t *rxLength, uint32_t fwt );
+
+
+/*!
+ *****************************************************************************
+ * \brief Start ISO14443A Anticollision Frame transceive
+ * 
+ * This starts the transceive of an ISO14443A anti-collision frame.
+ * \note Anticollision is sent without CRC
+ * 
+ * 
+ * \param[in,out] buf        : reference to ANTICOLLISION command (with known UID if any) to be sent (also out param)
+ *                             reception will be place on this buf after bytesToSend 
+ *                             buffer must be capable of holding a whole Anticollison frame (rfalNfcaSelReq)
+ * \param[in,out] bytesToSend: reference number of full bytes to be sent (including CMD byte and SEL_PAR)
+ *                             if a collision occurs will contain the number of clear bytes  
+ * \param[in,out] bitsToSend : reference to number of bits (0-7) to be sent; and received (also out param)
+ *                             if a collision occurs will indicate the number of clear bits (also out param)
+ * \param[out]    rxLength   : reference to the return the received length in bits
+ * \param[in]     fwt        : Frame Waiting Time in 1/fc
+ * 
+ * \return RFAL_ERR_NONE if there is no error
+ *****************************************************************************
+ */
+ReturnCode rfalISO14443AStartTransceiveAnticollisionFrame( uint8_t *buf, uint8_t *bytesToSend, uint8_t *bitsToSend, uint16_t *rxLength, uint32_t fwt );
+
+
+/*!
+ *****************************************************************************
+ * \brief Get ISO14443A Anticollision Frame Status
+ * 
+ * This gets the ISO14443A anti-collision frame status.
+ * 
+ * 
+ * \return RFAL_ERR_NONE if there is no error
+ *****************************************************************************
+ */
+ReturnCode rfalISO14443AGetTransceiveAnticollisionFrameStatus( void );
 
 
 /*****************************************************************************
@@ -1164,10 +1221,10 @@ ReturnCode rfalISO14443ATransceiveAnticollisionFrame( uint8_t *buf, uint8_t *byt
  * \param[out]  devicesDetected   : number of cards found
  * \param[out]  collisionsDetected: number of collisions detected
  * 
- * \return ERR_NONE        : If there is no error
- * \return ERR_PARAM       : Invalid parameter
- * \return ERR_WRONG_STATE : RFAL not initialized or mode not set
- * \return ERR_TIMEOUT     : If there is no response
+ * \return RFAL_ERR_NONE        : If there is no error
+ * \return RFAL_ERR_PARAM       : Invalid parameter
+ * \return RFAL_ERR_WRONG_STATE : RFAL not initialized or mode not set
+ * \return RFAL_ERR_TIMEOUT     : If there is no response
  *****************************************************************************
  */
 ReturnCode rfalFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t reqCode, rfalFeliCaPollRes* pollResList, uint8_t pollResListSize, uint8_t *devicesDetected, uint8_t *collisionsDetected );
@@ -1188,9 +1245,9 @@ ReturnCode rfalFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t 
  * \param[out]  devicesDetected   : number of cards found
  * \param[out]  collisionsDetected: number of collisions detected
  * 
- * \return ERR_NONE        : If there is no error
- * \return ERR_PARAM       : Invalid parameter
- * \return ERR_WRONG_STATE : RFAL not initialized or mode not set
+ * \return RFAL_ERR_NONE        : If there is no error
+ * \return RFAL_ERR_PARAM       : Invalid parameter
+ * \return RFAL_ERR_WRONG_STATE : RFAL not initialized or mode not set
  *****************************************************************************
  */
 ReturnCode rfalStartFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint8_t reqCode, rfalFeliCaPollRes* pollResList, uint8_t pollResListSize, uint8_t *devicesDetected, uint8_t *collisionsDetected );
@@ -1204,9 +1261,9 @@ ReturnCode rfalStartFeliCaPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uin
  * 
  * 
  * 
- * \return ERR_NONE        : If there is no error
- * \return  ERR_BUSY       : Operation ongoing
- * \return ERR_TIMEOUT     : If there is no response
+ * \return RFAL_ERR_NONE        : If there is no error
+ * \return  RFAL_ERR_BUSY       : Operation ongoing
+ * \return RFAL_ERR_TIMEOUT     : If there is no response
  *****************************************************************************
  */
 ReturnCode rfalGetFeliCaPollStatus( void );
@@ -1230,9 +1287,9 @@ ReturnCode rfalGetFeliCaPollStatus( void );
  * \param[in]  rxBufLen     : Maximum length of the incoming message in bytes
  * \param[out] actLen       : Actual received length in bits
  * 
- * \return  ERR_NONE        : Transceive done with no error
- * \return  ERR_WRONG_STATE : RFAL not initialized or mode not set
- * \return  ERR_IO          : Internal error
+ * \return  RFAL_ERR_NONE        : Transceive done with no error
+ * \return  RFAL_ERR_WRONG_STATE : RFAL not initialized or mode not set
+ * \return  RFAL_ERR_IO          : Internal error
  *****************************************************************************
  */
 ReturnCode rfalISO15693TransceiveAnticollisionFrame( uint8_t *txBuf, uint8_t txBufLen, uint8_t *rxBuf, uint8_t rxBufLen, uint16_t *actLen );
@@ -1247,12 +1304,12 @@ ReturnCode rfalISO15693TransceiveAnticollisionFrame( uint8_t *txBuf, uint8_t txB
  * \warning rxBuf must be able to contain the payload and CRC
  * 
  * \param[out] rxBuf        : Buffer where incoming message will be placed
- * \param[in] rxBufLen      : Maximum length of the incoming message in bytes
+ * \param[in]  rxBufLen     : Maximum length of the incoming message in bytes
  * \param[out] actLen       : Actual received length in bits
  * 
- * \return  ERR_NONE        : Transceive done with no error
- * \return  ERR_WRONG_STATE : RFAL not initialized or mode not set
- * \return  ERR_IO          : Internal error
+ * \return  RFAL_ERR_NONE        : Transceive done with no error
+ * \return  RFAL_ERR_WRONG_STATE : RFAL not initialized or mode not set
+ * \return  RFAL_ERR_IO          : Internal error
  *****************************************************************************
  */
 ReturnCode rfalISO15693TransceiveEOFAnticollision( uint8_t *rxBuf, uint8_t rxBufLen, uint16_t *actLen );
@@ -1267,14 +1324,14 @@ ReturnCode rfalISO15693TransceiveEOFAnticollision( uint8_t *rxBuf, uint8_t rxBuf
  * \warning rxBuf must be able to contain the payload and CRC
  * 
  * \param[out] rxBuf        : Buffer where incoming message will be placed
- * \param[in] rxBufLen      : Maximum length of the incoming message in bytes
+ * \param[in]  rxBufLen     : Maximum length of the incoming message in bytes
  * \param[out] actLen       : Actual received length in bytes
  * 
- * \return  ERR_NONE        : Transceive done with no error
- * \return  ERR_IO          : Internal error
+ * \return  RFAL_ERR_NONE        : Transceive done with no error
+ * \return  RFAL_ERR_IO          : Internal error
  *****************************************************************************
  */
-ReturnCode rfalISO15693TransceiveEOF( uint8_t *rxBuf, uint8_t rxBufLen, uint16_t *actLen );
+ReturnCode rfalISO15693TransceiveEOF( uint8_t *rxBuf, uint16_t rxBufLen, uint16_t *actLen );
 
 
 /*!
@@ -1292,12 +1349,12 @@ ReturnCode rfalISO15693TransceiveEOF( uint8_t *rxBuf, uint8_t rxBufLen, uint16_t
  * \param[in]  flags    : TransceiveFlags indication special handling
  * \param[in]  fwt      : Frame Waiting Time in 1/fc
  * 
- * \return  ERR_NONE         : Transceive done with no error
- * \return  ERR_BUSY         : Transceive ongoing
- * \return  ERR_XXXX         : Error occurred
- * \return  ERR_LINK_LOSS    : Link Loss - External Field is Off
- * \return  ERR_RF_COLLISION : Collision detected
- * \return  ERR_IO           : Internal error
+ * \return  RFAL_ERR_NONE         : Transceive done with no error
+ * \return  RFAL_ERR_BUSY         : Transceive ongoing
+ * \return  RFAL_ERR_XXXX         : Error occurred
+ * \return  RFAL_ERR_LINK_LOSS    : Link Loss - External Field is Off
+ * \return  RFAL_ERR_RF_COLLISION : Collision detected
+ * \return  RFAL_ERR_IO           : Internal error
  *****************************************************************************
  */
 ReturnCode rfalTransceiveBlockingTx( uint8_t* txBuf, uint16_t txBufLen, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t* actLen, uint32_t flags, uint32_t fwt );
@@ -1309,16 +1366,16 @@ ReturnCode rfalTransceiveBlockingTx( uint8_t* txBuf, uint16_t txBufLen, uint8_t*
  * This is method executes the reception of an ongoing Transceive triggered 
  * before by rfalTransceiveBlockingTx()
  * 
- * \return  ERR_NONE         : Transceive done with no error
- * \return  ERR_BUSY         : Transceive ongoing
- * \return  ERR_XXXX         : Error occurred
- * \return  ERR_TIMEOUT      : No response
- * \return  ERR_FRAMING      : Framing error detected
- * \return  ERR_PAR          : Parity error detected
- * \return  ERR_CRC          : CRC error detected
- * \return  ERR_LINK_LOSS    : Link Loss - External Field is Off
- * \return  ERR_RF_COLLISION : Collision detected
- * \return  ERR_IO           : Internal error
+ * \return  RFAL_ERR_NONE         : Transceive done with no error
+ * \return  RFAL_ERR_BUSY         : Transceive ongoing
+ * \return  RFAL_ERR_XXXX         : Error occurred
+ * \return  RFAL_ERR_TIMEOUT      : No response
+ * \return  RFAL_ERR_FRAMING      : Framing error detected
+ * \return  RFAL_ERR_PAR          : Parity error detected
+ * \return  RFAL_ERR_CRC          : CRC error detected
+ * \return  RFAL_ERR_LINK_LOSS    : Link Loss - External Field is Off
+ * \return  RFAL_ERR_RF_COLLISION : Collision detected
+ * \return  RFAL_ERR_IO           : Internal error
  *****************************************************************************
  */
 ReturnCode rfalTransceiveBlockingRx( void );
@@ -1338,16 +1395,16 @@ ReturnCode rfalTransceiveBlockingRx( void );
  * \param[in]  flags    : TransceiveFlags indication special handling
  * \param[in]  fwt      : Frame Waiting Time in 1/fc
  * 
- * \return  ERR_NONE         : Transceive done with no error
- * \return  ERR_BUSY         : Transceive ongoing
- * \return  ERR_XXXX         : Error occurred
- * \return  ERR_TIMEOUT      : No response
- * \return  ERR_FRAMING      : Framing error detected
- * \return  ERR_PAR          : Parity error detected
- * \return  ERR_CRC          : CRC error detected
- * \return  ERR_LINK_LOSS    : Link Loss - External Field is Off
- * \return  ERR_RF_COLLISION : Collision detected
- * \return  ERR_IO           : Internal error
+ * \return  RFAL_ERR_NONE         : Transceive done with no error
+ * \return  RFAL_ERR_BUSY         : Transceive ongoing
+ * \return  RFAL_ERR_XXXX         : Error occurred
+ * \return  RFAL_ERR_TIMEOUT      : No response
+ * \return  RFAL_ERR_FRAMING      : Framing error detected
+ * \return  RFAL_ERR_PAR          : Parity error detected
+ * \return  RFAL_ERR_CRC          : CRC error detected
+ * \return  RFAL_ERR_LINK_LOSS    : Link Loss - External Field is Off
+ * \return  RFAL_ERR_RF_COLLISION : Collision detected
+ * \return  RFAL_ERR_IO           : Internal error
  *****************************************************************************
  */
 ReturnCode rfalTransceiveBlockingTxRx( uint8_t* txBuf, uint16_t txBufLen, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t* actLen, uint32_t flags, uint32_t fwt );
@@ -1390,9 +1447,9 @@ bool rfalIsExtFieldOn( void );
  * \param[in]  rxLen:     pointer to write the data length in bits placed into rxBuf
  *  
  * 
- * \return ERR_PARAM    Invalid parameter
- * \return ERR_REQUEST  Invalid listen mode mask
- * \return ERR_NONE     Done with no error
+ * \return RFAL_ERR_WRONG_STATE : Not initialized properly
+ * \return RFAL_ERR_PARAM       : Invalid parametere mask
+ * \return RFAL_ERR_NONE        : Done with no error
  * 
  *****************************************************************************
  */
@@ -1403,7 +1460,15 @@ ReturnCode rfalListenStart( uint32_t lmMask, const rfalLmConfPA *confA, const rf
  *****************************************************************************
  * \brief Listen Mode start Sleeping
  * 
- * 
+ * \param[in]  sleepSt  :  sleep state to be set
+ * \param[in]  rxBuf    :  buffer to place incoming data
+ * \param[in]  rxBufLen :  length in bits of rxBuf
+ * \param[in]  rxLen    :  pointer to write the data length in bits placed into rxBuf
+ *
+ * \return RFAL_ERR_WRONG_STATE : Not initialized properly
+ * \return RFAL_ERR_PARAM       : Invalid parameter
+ * \return RFAL_ERR_NONE        : Done with no error
+ *
  *****************************************************************************
  */
 ReturnCode rfalListenSleepStart( rfalLmState sleepSt, uint8_t *rxBuf, uint16_t rxBufLen, uint16_t *rxLen );
@@ -1418,7 +1483,7 @@ ReturnCode rfalListenSleepStart( rfalLmState sleepSt, uint8_t *rxBuf, uint16_t r
  * \warning the listen mode will be disabled immediately on the RFchip regardless 
  *          of any ongoing operations like Transceive
  * 
- * \return ERR_NONE Done with no error
+ * \return RFAL_ERR_NONE : Done with no error
  * 
  *****************************************************************************
  */
@@ -1457,9 +1522,9 @@ rfalLmState rfalListenGetState( bool *dataFlag, rfalBitRate *lastBR );
  *  
  * \param[in] newSt : New state to go to
  * 
- * \return ERR_WRONG_STATE : Not initialized properly
- * \return ERR_PARAM       : Invalid parameter
- * \return ERR_NONE        : Done with no error
+ * \return RFAL_ERR_WRONG_STATE : Not initialized properly
+ * \return RFAL_ERR_PARAM       : Invalid parameter
+ * \return RFAL_ERR_NONE        : Done with no error
  * 
  *****************************************************************************
  */
@@ -1481,9 +1546,9 @@ ReturnCode rfalListenSetState( rfalLmState newSt );
  *                            layers. If NULL will automatically configure the 
  *                            Wake-Up mode
  * 
- * \return ERR_WRONG_STATE : Not initialized properly
- * \return ERR_PARAM       : Invalid parameter
- * \return ERR_NONE        : Done with no error
+ * \return RFAL_ERR_WRONG_STATE : Not initialized properly
+ * \return RFAL_ERR_PARAM       : Invalid parameter
+ * \return RFAL_ERR_NONE        : Done with no error
  * 
  *****************************************************************************
  */
@@ -1519,9 +1584,9 @@ bool rfalWakeUpModeHasWoke( void );
  * \param[in]  force       : Force info update info by retrieving it from device
  * \param[out] info        : pointer where WU mode info is to be stored
  *
- * \return ERR_WRONG_STATE : Not initialized properly
- * \return ERR_PARAM       : Invalid parameter
- * \return ERR_NONE        : Done with no error
+ * \return RFAL_ERR_WRONG_STATE : Not initialized properly
+ * \return RFAL_ERR_PARAM       : Invalid parameter
+ * \return RFAL_ERR_NONE        : Done with no error
  *****************************************************************************
  */
 ReturnCode rfalWakeUpModeGetInfo( bool force, rfalWakeUpInfo *info );
@@ -1533,9 +1598,9 @@ ReturnCode rfalWakeUpModeGetInfo( bool force, rfalWakeUpInfo *info );
  *
  * Stops the Wake-Up Mode
  * 
- * \return ERR_WRONG_STATE : Not initialized properly
- * \return ERR_PARAM       : Invalid parameter
- * \return ERR_NONE        : Done with no error
+ * \return RFAL_ERR_WRONG_STATE : Not initialized properly
+ * \return RFAL_ERR_PARAM       : Invalid parameter
+ * \return RFAL_ERR_NONE        : Done with no error
  * 
  *****************************************************************************
  */
@@ -1551,13 +1616,15 @@ ReturnCode rfalWakeUpModeStop( void );
  * mode but no operation nor period measurement is performed.
  * Mode must be terminated by rfalLowPowerModeStop()
  * 
- * \return ERR_WRONG_STATE : Not initialized properly
- * \return ERR_PARAM       : Invalid parameter
- * \return ERR_NONE        : Done with no error
+ * \param[in]  mode             : low power mode to be set
+ *
+ * \return RFAL_ERR_WRONG_STATE : Not initialized properly
+ * \return RFAL_ERR_PARAM       : Invalid parameter
+ * \return RFAL_ERR_NONE        : Done with no error
  * 
  *****************************************************************************
  */
-ReturnCode rfalLowPowerModeStart( void );
+ReturnCode rfalLowPowerModeStart( rfalLpMode mode );
 
 
 /*!
@@ -1566,9 +1633,9 @@ ReturnCode rfalLowPowerModeStart( void );
  *
  * Stops the Low Power Mode re-enabling the device
  * 
- * \return ERR_WRONG_STATE : Not initialized properly
- * \return ERR_PARAM       : Invalid parameter
- * \return ERR_NONE        : Done with no error
+ * \return RFAL_ERR_WRONG_STATE : Not initialized properly
+ * \return RFAL_ERR_PARAM       : Invalid parameter
+ * \return RFAL_ERR_NONE        : Done with no error
  * 
  *****************************************************************************
  */

@@ -53,8 +53,8 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_rf.h"
 
 /*
@@ -87,15 +87,15 @@
  * This method sends a Read command to a NFC-A T2T Listener device  
  *
  *
- * \param[in]   blockNum    : Number of the block to read
- * \param[out]  rxBuf       : pointer to place the read data
- * \param[in]   rxBufLen    : size of rxBuf (RFAL_T2T_READ_DATA_LEN)
- * \param[out]  rcvLen   : actual received data
+ * \param[in]   blockNum         : Number of the block to read
+ * \param[out]  rxBuf            : pointer to place the read data
+ * \param[in]   rxBufLen         : size of rxBuf (RFAL_T2T_READ_DATA_LEN)
+ * \param[out]  rcvLen           : actual received data
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT2TPollerRead( uint8_t blockNum, uint8_t* rxBuf, uint16_t rxBufLen, uint16_t *rcvLen );
@@ -108,14 +108,14 @@ ReturnCode rfalT2TPollerRead( uint8_t blockNum, uint8_t* rxBuf, uint16_t rxBufLe
  * This method sends a Write command to a NFC-A T2T Listener device  
  *
  *
- * \param[in]  blockNum     : Number of the block to write
- * \param[in]  wrData       : data to be written on the given block
- *                            size must be of RFAL_T2T_WRITE_DATA_LEN
+ * \param[in]  blockNum          : Number of the block to write
+ * \param[in]  wrData            : data to be written on the given block
+ *                                 size must be of RFAL_T2T_WRITE_DATA_LEN
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT2TPollerWrite( uint8_t blockNum, const uint8_t* wrData );
@@ -127,12 +127,12 @@ ReturnCode rfalT2TPollerWrite( uint8_t blockNum, const uint8_t* wrData );
  *  
  * This method sends a Sector Select commands to a NFC-A T2T Listener device  
  *
- * \param[in]  sectorNum    : Sector Number
+ * \param[in]  sectorNum         : Sector Number
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
  ReturnCode rfalT2TPollerSectorSelect( uint8_t sectorNum );

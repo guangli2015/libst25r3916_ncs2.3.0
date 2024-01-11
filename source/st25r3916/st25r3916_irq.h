@@ -54,7 +54,7 @@
 ******************************************************************************
 */
 
-#include "platform.h"
+#include "rfal_platform.h"
 
 /*
 ******************************************************************************
@@ -93,7 +93,11 @@
 #define ST25R3916_IRQ_MASK_WT              (uint32_t)(0x00080000U)   /*!< ST25R3916 wake-up interrupt                                 */
 #define ST25R3916_IRQ_MASK_WAM             (uint32_t)(0x00040000U)   /*!< ST25R3916 wake-up due to amplitude interrupt                */
 #define ST25R3916_IRQ_MASK_WPH             (uint32_t)(0x00020000U)   /*!< ST25R3916 wake-up due to phase interrupt                    */
+#if defined(ST25R3916)
 #define ST25R3916_IRQ_MASK_WCAP            (uint32_t)(0x00010000U)   /*!< ST25R3916 wake-up due to capacitance measurement            */
+#elif defined(ST25R3916B)
+#define ST25R3916_IRQ_MASK_WCAP            ST25R3916_IRQ_MASK_NONE   /*!< ST25R3916B disable capacitive WU                            */
+#endif /* ST25R3916 */
 
 /* Passive Target Interrupt Register */
 #define ST25R3916_IRQ_MASK_PPON2           (uint32_t)(0x80000000U)   /*!< ST25R3916 PPON2 Field on waiting Timer interrupt            */
@@ -234,6 +238,8 @@ void st25r3916ClearAndEnableInterrupts( uint32_t mask );
 /*! 
  *****************************************************************************
  *  \brief  Sets IRQ callback for the ST25R3916 interrupt
+ *
+ *  \param[in] cb: pointer to the callback method
  *
  *****************************************************************************
  */

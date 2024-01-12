@@ -233,7 +233,7 @@ extern uint8_t globalCommProtectCnt;                                           /
 ******************************************************************************
 */
 
-#define RFAL_FEATURE_LISTEN_MODE               true       /*!< Enable/Disable RFAL support for Listen Mode                               */
+#define RFAL_FEATURE_LISTEN_MODE               false       /*!< Enable/Disable RFAL support for Listen Mode                               */
 #define RFAL_FEATURE_WAKEUP_MODE               true       /*!< Enable/Disable RFAL support for the Wake-Up mode                          */
 #define RFAL_FEATURE_LOWPOWER_MODE             true       /*!< Enable/Disable RFAL support for the Low Power mode                        */
 #define RFAL_FEATURE_NFCA                      true       /*!< Enable/Disable RFAL support for NFC-A (ISO14443A)                         */
@@ -250,7 +250,7 @@ extern uint8_t globalCommProtectCnt;                                           /
 #define RFAL_FEATURE_ISO_DEP                   true       /*!< Enable/Disable RFAL support for ISO-DEP (ISO14443-4)                      */
 #define RFAL_FEATURE_ISO_DEP_POLL              true       /*!< Enable/Disable RFAL support for Poller mode (PCD) ISO-DEP (ISO14443-4)    */
 #define RFAL_FEATURE_ISO_DEP_LISTEN            true       /*!< Enable/Disable RFAL support for Listen mode (PICC) ISO-DEP (ISO14443-4)   */
-#define RFAL_FEATURE_NFC_DEP                   true       /*!< Enable/Disable RFAL support for NFC-DEP (NFCIP1/P2P)                      */
+#define RFAL_FEATURE_NFC_DEP                   false       /*!< Enable/Disable RFAL support for NFC-DEP (NFCIP1/P2P)                      */
 
 
 #define RFAL_FEATURE_ISO_DEP_IBLOCK_MAX_LEN    256U       /*!< ISO-DEP I-Block max length. Please use values as defined by rfalIsoDepFSx */
@@ -259,6 +259,15 @@ extern uint8_t globalCommProtectCnt;                                           /
 
 #define RFAL_FEATURE_ISO_DEP_APDU_MAX_LEN      512U       /*!< ISO-DEP APDU max length.                                                  */
 #define RFAL_FEATURE_NFC_DEP_PDU_MAX_LEN       512U       /*!< NFC-DEP PDU max length.                                                   */
+
+/*
+******************************************************************************
+* RFAL CUSTOM SETTINGS
+******************************************************************************
+  Custom analog configs are used to cope with Automatic Antenna Tuning (AAT)
+  that are optimized differently for each board.
+*/
+#define RFAL_ANALOG_CONFIG_CUSTOM                         /*!< Use Custom Analog Configs when defined    */
 
 /*
 ******************************************************************************

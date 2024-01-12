@@ -409,7 +409,7 @@ const uint8_t rfalAnalogConfigDefaultSettings[] = {
     MODE_ENTRY_17_REG( (RFAL_ANALOG_CONFIG_TECH_CHIP | RFAL_ANALOG_CONFIG_CHIP_INIT)
                         , ST25R3916_REG_IO_CONF1, (ST25R3916_REG_IO_CONF1_out_cl_mask | ST25R3916_REG_IO_CONF1_lf_clk_off), 0x07                               /* Disable MCU_CLK */
                         , ST25R3916_REG_IO_CONF2, (ST25R3916_REG_IO_CONF2_miso_pd1 | ST25R3916_REG_IO_CONF2_miso_pd2 ), 0x18                                   /* SPI Pull downs */
-                        , ST25R3916_REG_IO_CONF2,  ST25R3916_REG_IO_CONF2_aat_en, 0x00                                                /* Enable AAT */
+                        , ST25R3916_REG_IO_CONF2,  ST25R3916_REG_IO_CONF2_aat_en, ST25R3916_REG_IO_CONF2_aat_en                                                /* Enable AAT */
                         , ST25R3916_REG_TX_DRIVER, ST25R3916_REG_TX_DRIVER_d_res_mask, 0x00                                                                    /* Set RFO resistance Active Tx */
                         , ST25R3916_REG_RES_AM_MOD, 0xFF, 0x80                                                                                                 /* Use minimum non-overlap */
                         , ST25R3916_REG_FIELD_THRESHOLD_ACTV,   ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_mask, ST25R3916_REG_FIELD_THRESHOLD_ACTV_trg_105mV      /* Lower activation threshold (higher than deactivation)*/

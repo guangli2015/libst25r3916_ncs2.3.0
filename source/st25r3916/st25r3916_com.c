@@ -41,7 +41,8 @@
 #include "rfal_platform.h"
 #include "rfal_utils.h"
 
-
+#include <zephyr/logging/log.h>
+LOG_MODULE_DECLARE(st25r3916);
 /*
 ******************************************************************************
 * LOCAL DEFINES
@@ -187,7 +188,7 @@ static void st25r3916comStart( void )
 #else
     /* Perform the chip select */
     platformSpiSelect();
-    
+
     #if defined(ST25R_COM_SINGLETXRX)
         comBufIt = 0;                                  /* reset local buffer position   */
     #endif /* ST25R_COM_SINGLETXRX */

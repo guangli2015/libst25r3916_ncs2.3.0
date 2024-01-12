@@ -48,26 +48,38 @@
 #include <zephyr/sys/byteorder.h>
 #include <string.h>
 #include <zephyr/logging/log.h>
-#include "demo.h"
-#include "utils.h"
-#include "rfal_nfc.h"
-#include "logger.h"
 #include <psa/crypto.h>
 #include <psa/crypto_extra.h>
-
-
 #include <zephyr/drivers/flash.h>
 #include <zephyr/storage/flash_map.h>
 
+#include "demo.h"
+#include "utils.h"
+#include "rfal_nfc.h"
+#include "rfal_t2t.h"
 
+#include "logger.h"
+
+#if RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE
+#include "demo_ce.h"
+#endif /* RFAL_FEATURE_LISTEN_MODE */
+
+/** @addtogroup X-CUBE-NFC6_Applications
+ *  @{
+ */
+
+/** @addtogroup PollingTagDetect
+ *  @{
+ */
+
+/** @addtogroup PTD_Demo
+ * @{
+ */
 
 #define SPI_FLASH_TEST_REGION_OFFSET 0xff000
 
 #define SPI_FLASH_SECTOR_SIZE        4096
 LOG_MODULE_DECLARE(st25r3916);
-#if RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE
-#include "demo_ce.h"
-#endif /* RFAL_FEATURE_LISTEN_MODE */
 /*
 ******************************************************************************
 * GLOBAL DEFINES
@@ -120,7 +132,10 @@ static uint8_t readBinary[] = { 0x00, 0xB0, 0x00, 0x00, 0x0F };
 /* P2P communication data */    
 static uint8_t ndefLLCPSYMM[] = {0x00, 0x00};
 static uint8_t ndefInit[] = {0x05, 0x20, 0x06, 0x0F, 0x75, 0x72, 0x6E, 0x3A, 0x6E, 0x66, 0x63, 0x3A, 0x73, 0x6E, 0x3A, 0x73, 0x6E, 0x65, 0x70, 0x02, 0x02, 0x07, 0x80, 0x05, 0x01, 0x02};
-static uint8_t ndefUriSTcom[] = {0x13, 0x20, 0x00, 0x10, 0x02, 0x00, 0x00, 0x00, 0x19, 0xc1, 0x01, 0x00, 0x00, 0x00, 0x12, 0x55, 0x00, 0x68, 0x74, 0x74, 0x70, 0x3a, 0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x73, 0x74, 0x2e, 0x63, 0x6f, 0x6d};
+static uint8_t ndefUriSTcom[] = {0x13, 0x20, 0x00, 0x10, 0x02, 0x00, 0x00, 0x00, 0x19, 0xc1, 0x01, 
+                                  0x00, 0x00, 0x00, 0x12, 0x55, 0x00, 0x68, 0x74, 0x74, 0x70, 0x3a, 
+                                  0x2f, 0x2f, 0x77, 0x77, 0x77, 0x2e, 0x73, 0x74, 0x2e, 0x63, 0x6f, 0x6d,
+                                  0x2f, 0x73, 0x74, 0x32, 0x35, 0x2D, 0x64, 0x65, 0x6D, 0x6F };
 #endif /* RFAL_FEATURE_NFC_DEP */
 
 #if RFAL_SUPPORT_CE && RFAL_FEATURE_LISTEN_MODE
@@ -156,6 +171,11 @@ static uint8_t ceNFCF_SENSF_RES[]  = {0x01,                                     
 
 static rfalNfcDiscoverParam discParam;
 static uint8_t              state = DEMO_ST_NOTINIT;
+static bool                 multiSel;
+
+/**
+  * @}
+  */
 
 /*
 ******************************************************************************
@@ -164,18 +184,19 @@ static uint8_t              state = DEMO_ST_NOTINIT;
 */
 extern void uaap_transactions( void );
 extern void Make_ECPVASUP_cmd(uint8_t *data,size_t size);
-
 extern void LockStateChangebyNfc();
+static void demoAPDU_apple( void );
+
 static void demoP2P( rfalNfcDevice *nfcDev );
 static void demoAPDU( void );
-static void demoAPDU_apple( void );
 static void demoNfcv( rfalNfcvListenDevice *nfcvDev );
 static void demoNfcf( rfalNfcfListenDevice *nfcfDev );
+static void demoT2t( void );
 static void demoCE( rfalNfcDevice *nfcDev );
 static void demoNotif( rfalNfcState st );
 ReturnCode  demoTransceiveBlocking( uint8_t *txBuf, uint16_t txBufSize, uint8_t **rxBuf, uint16_t **rcvLen, uint32_t fwt );
 
- void flash_setup();
+void flash_setup();
 void writeToFlash(uint8_t *Pdata , size_t len);
 static ReturnCode demoPropNfcInitialize( void )
 { 
@@ -209,25 +230,41 @@ static void demoNotif( rfalNfcState st )
 {
     uint8_t       devCnt;
     rfalNfcDevice *dev;
-    
+
     if( st == RFAL_NFC_STATE_WAKEUP_MODE )
     {
         platformLog("Wake Up mode started \r\n");
     }
     else if( st == RFAL_NFC_STATE_POLL_TECHDETECT )
     {
-        platformLog("Wake Up mode terminated. Polling for devices \r\n");
+        if( discParam.wakeupEnabled )
+        {
+            platformLog("Wake Up mode terminated. Polling for devices \r\n");
+        }
     }
     else if( st == RFAL_NFC_STATE_POLL_SELECT )
     {
-        /* Multiple devices were found, activate first of them */
-        rfalNfcGetDevicesFound( &dev, &devCnt );
-        rfalNfcSelect( 0 );
-        
-        platformLog("Multiple Tags detected: %d \r\n", devCnt);
+        /* Check if in case of multiple devices, selection is already attempted */
+        if( (!multiSel) )
+        {
+            multiSel = true;
+            /* Multiple devices were found, activate first of them */
+            rfalNfcGetDevicesFound( &dev, &devCnt );
+            rfalNfcSelect( 0 );
+
+            platformLog("Multiple Tags detected: %d \r\n", devCnt);
+        }
+        else
+        {
+            rfalNfcDeactivate( RFAL_NFC_DEACTIVATE_DISCOVERY );
+        }
+    }
+    else if( st == RFAL_NFC_STATE_START_DISCOVERY )
+    {
+        /* Clear mutiple device selection flag */
+        multiSel = false;
     }
 }
-
 
 /*!
  *****************************************************************************
@@ -246,6 +283,7 @@ bool demoIni( void )
     err = rfalNfcInitialize();
     if( err == ERR_NONE )
     {
+        rfalNfcDefaultDiscParams( &discParam );
         discParam.compMode      = RFAL_COMPLIANCE_MODE_NFC;
         discParam.devLimit      = 1U;
         discParam.nfcfBR        = RFAL_BR_212;
@@ -286,10 +324,12 @@ bool demoIni( void )
 #if RFAL_FEATURE_ST25TB
       //  discParam.techs2Find          |= RFAL_NFC_POLL_TECH_ST25TB;
 #endif /* RFAL_FEATURE_ST25TB */
-        discParam.techs2Find          |= RFAL_NFC_POLL_TECH_PROP;
+
 #if ST25R95
         discParam.isoDepFS           = RFAL_ISODEP_FSXI_128;          /* ST25R95 cannot support 256 bytes of data block */
 #endif /* ST25R95 */
+
+        discParam.techs2Find          |= RFAL_NFC_POLL_TECH_PROP;
 
 #if RFAL_SUPPORT_MODE_POLL_ACTIVE_P2P && RFAL_FEATURE_NFC_DEP
         //discParam.techs2Find |= RFAL_NFC_POLL_TECH_AP2P;
@@ -299,9 +339,10 @@ bool demoIni( void )
        // discParam.techs2Find |= RFAL_NFC_LISTEN_TECH_AP2P;
 #endif /* RFAL_SUPPORT_MODE_LISTEN_ACTIVE_P2P && RFAL_FEATURE_NFC_DEP && RFAL_FEATURE_LISTEN_MODE */
 
-         ST_MEMSET(&discParam.propNfc, 0x00, sizeof(rfalNfcPropCallbacks) );
+        ST_MEMSET(&discParam.propNfc, 0x00, sizeof(rfalNfcPropCallbacks) );
         discParam.propNfc.rfalNfcpPollerInitialize          = demoPropNfcInitialize;
         discParam.propNfc.rfalNfcpPollerTechnologyDetection = demoPropNfcTechnologyDetection;
+
 #if DEMO_CARD_EMULATION_ONLY
         discParam.totalDuration        = 60000U;              /* 60 seconds */
         discParam.techs2Find           = RFAL_NFC_TECH_NONE;  /* Overwrite any previous poller modes */
@@ -334,7 +375,7 @@ bool demoIni( void )
         err = rfalNfcDiscover( &discParam );
         rfalNfcDeactivate( false );
         
-        if( err != ERR_NONE )
+        if( err != RFAL_ERR_NONE )
         {
             return false;
         }
@@ -387,7 +428,8 @@ void demoCycle( void )
           
           rfalNfcDeactivate( false );
           rfalNfcDiscover( &discParam );
-        
+          
+          multiSel = false;
           state = DEMO_ST_DISCOVERY;
           break;
 
@@ -397,6 +439,7 @@ void demoCycle( void )
             if( rfalNfcIsDevActivated( rfalNfcGetState() ) )
             {
                 rfalNfcGetActiveDevice( &nfcDevice );
+
                 platformLog("%s DEMO_ST_DISCOVERY nfcDevice->type = %d", __func__, nfcDevice->type);
                 switch( nfcDevice->type )
                 {
@@ -426,6 +469,7 @@ void demoCycle( void )
                             default:
                                 platformLog("ISO14443A/NFC-A card found. UID: %s\r\n", hex2str( nfcDevice->nfcid, nfcDevice->nfcidLen ) );
 
+                                //demoT2t();
                                 break;
                         }
                         break;
@@ -500,7 +544,7 @@ void demoCycle( void )
                         platformLedOn( ((nfcDevice->type == RFAL_NFC_POLL_TYPE_NFCA) ? PLATFORM_LED_A_PORT : PLATFORM_LED_F_PORT), 
                                        ((nfcDevice->type == RFAL_NFC_POLL_TYPE_NFCA) ? PLATFORM_LED_A_PIN  : PLATFORM_LED_F_PIN)  );
                     
-
+                        //demoCE( nfcDevice );
                         break;
                     
                     /*******************************************************************************/
@@ -508,7 +552,7 @@ void demoCycle( void )
                         break;
                 }
                 
-                rfalNfcDeactivate( false );
+                rfalNfcDeactivate( RFAL_NFC_DEACTIVATE_IDLE );
 
 #if !defined(DEMO_NO_DELAY_IN_DEMOCYCLE)
                 switch( nfcDevice->type )
@@ -671,6 +715,27 @@ static void demoNfcv( rfalNfcvListenDevice *nfcvDev )
 #endif /* RFAL_FEATURE_NFCV */        
 }
 
+/*!
+ *****************************************************************************
+ * \brief Demo T2T Exchange
+ *
+ * Example how to exchange read blocks on a T2T tag
+ *
+ *****************************************************************************
+ */
+static void demoT2t( void )
+{
+#if RFAL_FEATURE_T2T
+    ReturnCode            err;
+    uint16_t              rcvLen;
+    uint8_t               blockNum = 0;
+    uint8_t               rxBuf[ RFAL_T2T_READ_DATA_LEN ];
+
+    err = rfalT2TPollerRead(blockNum, rxBuf, sizeof(rxBuf), &rcvLen);
+    platformLog(" Read Block: %s %s\r\n", (err != RFAL_ERR_NONE) ? "FAIL": "OK Data:", (err != RFAL_ERR_NONE) ? "" : hex2Str( rxBuf, RFAL_T2T_READ_DATA_LEN));
+
+#endif
+}
 
 /*!
  *****************************************************************************
@@ -809,6 +874,22 @@ ReturnCode demoTransceiveBlocking( uint8_t *txBuf, uint16_t txBufSize, uint8_t *
     }
     return err;
 }
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
+
+/**
+  * @}
+  */
 
 void flash_setup(void)
 {

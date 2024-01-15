@@ -52,8 +52,8 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 
 /*
  ******************************************************************************
@@ -117,12 +117,12 @@ void rfalDpoSetMeasureCallback( rfalDpoMeasureFunc dpoMeasureFunc );
  *  
  * Load the dynamic power table  
  *
- * \param[in]  powerTbl:     location of power Table to be loaded
- * \param[in]  powerTblEntries: number of entries of the power Table to be loaded
+ * \param[in]  powerTbl        :  location of power Table to be loaded
+ * \param[in]  powerTblEntries : number of entries of the power Table to be loaded
  * 
- * \return ERR_NONE    : No error
- * \return ERR_PARAM   : if configTbl is invalid
- * \return ERR_NOMEM   : if the given Table is bigger exceeds the max size
+ * \return RFAL_ERR_NONE    : No error
+ * \return RFAL_ERR_PARAM   : if configTbl is invalid
+ * \return RFAL_ERR_NOMEM   : if the given Table is bigger exceeds the max size
  *****************************************************************************
  */
 ReturnCode rfalDpoTableWrite( rfalDpoEntry* powerTbl, uint8_t powerTblEntries );
@@ -133,12 +133,12 @@ ReturnCode rfalDpoTableWrite( rfalDpoEntry* powerTbl, uint8_t powerTblEntries );
  *  
  * Read the dynamic power table  
  *
- * \param[out]   tblBuf: location to the rfalDpoEntry[] to place the Table 
- * \param[in]    tblBufEntries: number of entries available in tblBuf to place the power Table
- * \param[out]   tableEntries: returned number of entries actually written into tblBuf
+ * \param[out]   tblBuf        : location to the rfalDpoEntry[] to place the Table 
+ * \param[in]    tblBufEntries : number of entries available in tblBuf to place the power Table
+ * \param[out]   tableEntries  : returned number of entries actually written into tblBuf
  * 
- * \return ERR_NONE    : No error
- * \return ERR_PARAM   : if configTbl is invalid or parameters are invalid
+ * \return RFAL_ERR_NONE    : No error
+ * \return RFAL_ERR_PARAM   : if configTbl is invalid or parameters are invalid
  *****************************************************************************
  */
 ReturnCode rfalDpoTableRead( rfalDpoEntry* tblBuf, uint8_t tblBufEntries, uint8_t* tableEntries );
@@ -150,9 +150,9 @@ ReturnCode rfalDpoTableRead( rfalDpoEntry* tblBuf, uint8_t tblBufEntries, uint8_
  * It measures the current output and adjusts the power accordingly to 
  * the dynamic power table  
  * 
- * \return ERR_NONE        : No error
- * \return ERR_PARAM       : if configTbl is invalid or parameters are invalid
- * \return ERR_WRONG_STATE : if the current state is valid for DPO Adjustment
+ * \return RFAL_ERR_NONE        : No error
+ * \return RFAL_ERR_PARAM       : if configTbl is invalid or parameters are invalid
+ * \return RFAL_ERR_WRONG_STATE : if the current state is valid for DPO Adjustment
  *****************************************************************************
  */
 ReturnCode rfalDpoAdjust( void );
@@ -163,7 +163,7 @@ ReturnCode rfalDpoAdjust( void );
  *  
  * Return current used DPO power table entry settings
  *
- * \return ERR_NONE    : Current DpoEntry. This includes d_res, inc and dec
+ * \return RFAL_ERR_NONE    : Current DpoEntry. This includes d_res, inc and dec
  * 
  *****************************************************************************
  */
@@ -171,9 +171,19 @@ rfalDpoEntry* rfalDpoGetCurrentTableEntry(void);
 
 /*! 
  *****************************************************************************
+ * \brief  Get Current Dynamic power table index
+ *
+ * \return the index currently used DPO table entry 
+ *
+ *****************************************************************************
+ */
+uint8_t rfalDpoGetCurrentTableIndex( void );
+
+/*! 
+ *****************************************************************************
  * \brief  Dynamic power set enabled state
  *  
- * \param[in]     enable: new active state
+ * \param[in] enable : new active state
  *
  * Set state to enable or disable the Dynamic power adjustment 
  * 

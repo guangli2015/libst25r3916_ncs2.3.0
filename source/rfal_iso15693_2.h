@@ -40,8 +40,8 @@
 * INCLUDES
 ******************************************************************************
 */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 
 /*
 ******************************************************************************
@@ -101,8 +101,8 @@ struct iso15693StreamConfig {
  *  \param[out] needed_stream_config : return a pointer to the stream config 
  *              needed for this iso15693 config. To be used for configure RF chip.
  *
- *  \return ERR_IO : Error during communication.
- *  \return ERR_NONE : No error.
+ *  \return RFAL_ERR_IO   : Error during communication.
+ *  \return RFAL_ERR_NONE : No error.
  *
  *****************************************************************************
  */
@@ -117,7 +117,7 @@ extern ReturnCode rfalIso15693PhyConfigure(const rfalIso15693PhyConfig_t* config
  *
  *  \param[out] config : ISO15693 phy configuration.
  *
- *  \return ERR_NONE : No error.
+ *  \return RFAL_ERR_NONE : No error.
  *
  *****************************************************************************
  */
@@ -130,25 +130,25 @@ extern ReturnCode rfalIso15693PhyGetConfiguration(rfalIso15693PhyConfig_t* confi
  *  This function takes \a length bytes from \a buffer, perform proper
  *  encoding and sends out the frame to the ST25R391x.
  *
- *  \param[in] buffer : data to send, modified to adapt flags.
- *  \param[in] length : number of bytes to send.
- *  \param[in] sendCrc : If set to true, CRC is appended to the frame
- *  \param[in] sendFlags: If set to true, flag field is sent according to
- *                        ISO15693.
- *  \param[in] picopassMode :  If set to true, the coding will be according to Picopass
+ *  \param[in] buffer    : data to send, modified to adapt flags.
+ *  \param[in] length    : number of bytes to send.
+ *  \param[in] sendCrc   : If set to true, CRC is appended to the frame
+ *  \param[in] sendFlags : If set to true, flag field is sent according to
+ *                                 ISO15693.
+ *  \param[in] picopassMode   :  If set to true, the coding will be according to Picopass
  *  \param[out] subbit_total_length : Return the complete bytes which need to 
  *                                   be send for the current coding
- *  \param[in,out] offset : Set to 0 for first transfer, function will update it to
-                            point to next byte to be coded
- *  \param[out] outbuf : buffer where the function will store the coded subbit stream
- *  \param[out] outBufSize : the size of the output buffer
+ *  \param[in,out] offset     : Set to 0 for first transfer, function will update it to
+                                point to next byte to be coded
+ *  \param[out] outbuf        : buffer where the function will store the coded subbit stream
+ *  \param[out] outBufSize    : the size of the output buffer
  *  \param[out] actOutBufSize : the amount of data stored into the buffer at this call
  *
- *  \return ERR_IO : Error during communication.
- *  \return ERR_AGAIN : Data was not coded all the way. Call function again with a new/emptied buffer
- *  \return ERR_NO_MEM : In case outBuf is not big enough. Needs to have at 
-                         least 5 bytes for 1of4 coding and 65 bytes for 1of256 coding
- *  \return ERR_NONE : No error.
+ *  \return RFAL_ERR_IO     : Error during communication.
+ *  \return RFAL_ERR_AGAIN  : Data was not coded all the way. Call function again with a new/emptied buffer
+ *  \return RFAL_ERR_NO_MEM : In case outBuf is not big enough. Needs to have at 
+                               least 5 bytes for 1of4 coding and 65 bytes for 1of256 coding
+ *  \return RFAL_ERR_NONE   : No error
  *
  *****************************************************************************
  */
@@ -165,21 +165,21 @@ extern ReturnCode rfalIso15693VCDCode(uint8_t* buffer, uint16_t length, bool sen
  *  and writes the raw data to \a buffer.
  *  \note Buffer needs to be big enough to hold CRC also (+2 bytes)
  *
- *  \param[in] inBuf : buffer with the hamming coded stream to be decoded
- *  \param[in] inBufLen : number of bytes to decode (=length of buffer).
- *  \param[out] outBuf : buffer where received data shall be written to.
- *  \param[in] outBufLen : Length of output buffer, should be approx twice the size of inBuf
- *  \param[out] outBufPos : The number of decoded bytes. Could be used in 
- *                          extended implementation to allow multiple calls
- *  \param[out] bitsBeforeCol : in case of ERR_RF_COLLISION this value holds the
- *   number of bits in the current byte where the collision happened.
- *  \param[in] ignoreBits : number of bits in the beginning where collisions will be ignored
+ *  \param[in] inBuf        : buffer with the hamming coded stream to be decoded
+ *  \param[in] inBufLen     : number of bytes to decode (=length of buffer).
+ *  \param[out] outBuf      : buffer where received data shall be written to.
+ *  \param[in] outBufLen    : Length of output buffer, should be approx twice the size of inBuf
+ *  \param[out] outBufPos   : The number of decoded bytes. Could be used in 
+ *                              extended implementation to allow multiple calls
+ *  \param[out] bitsBeforeCol : in case of RFAL_ERR_RF_COLLISION this value holds the
+ *                               number of bits in the current byte where the collision happened
+ *  \param[in] ignoreBits   : number of bits in the beginning where collisions will be ignored
  *  \param[in] picopassMode :  if set to true, the decoding will be according to Picopass
  *
- *  \return ERR_RF_COLLISION : collision occured, data uncorrect
- *  \return ERR_CRC : CRC error, data uncorrect
- *  \return ERR_TIMEOUT : timeout waiting for data.
- *  \return ERR_NONE : No error.
+ *  \return RFAL_ERR_RF_COLLISION : collision occured, data uncorrect
+ *  \return RFAL_ERR_CRC          : CRC error, data uncorrect
+ *  \return RFAL_ERR_TIMEOUT      : timeout waiting for data.
+ *  \return RFAL_ERR_NONE         : No error
  *
  *****************************************************************************
  */

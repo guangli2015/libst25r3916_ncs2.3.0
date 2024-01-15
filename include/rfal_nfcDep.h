@@ -56,8 +56,8 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_rf.h"
 
 
@@ -184,13 +184,13 @@
 #define rfalNfcDepLR2PP( LRx )         ( ((uint8_t)(LRx) << RFAL_NFCDEP_PP_LR_SHIFT) & RFAL_NFCDEP_PP_LR_MASK)   /*!< Returns the PP byte with the given LRx value  */
 
 /*! Returns the Frame size value from the given LRx value  */
-#define rfalNfcDepLR2FS( LRx )         (uint16_t)(MIN( (RFAL_NFCDEP_FS_VAL_MIN * ((uint16_t)(LRx) + 1U) ), RFAL_NFCDEP_FRAME_SIZE_MAX_LEN ))
+#define rfalNfcDepLR2FS( LRx )         (uint16_t)(RFAL_MIN( (RFAL_NFCDEP_FS_VAL_MIN * ((uint16_t)(LRx) + 1U) ), RFAL_NFCDEP_FRAME_SIZE_MAX_LEN ))
 
 /*! 
  *  Despite DIGITAL 1.0 14.6.2.1 stating that the last two bytes may filled with 
  *  any value, some devices (Samsung Google Nexus) only accept when these are 0 */ 
-#define rfalNfcDepSetNFCID( dst, src, len )   ST_MEMSET( (dst), 0x00, RFAL_NFCDEP_NFCID3_LEN ); \
-                                              if( (len) > 0U ) {ST_MEMCPY( (dst), (src), (len) );}
+#define rfalNfcDepSetNFCID( dst, src, len )   RFAL_MEMSET( (dst), 0x00, RFAL_NFCDEP_NFCID3_LEN ); \
+                                              if( (len) > 0U ) {RFAL_MEMCPY( (dst), (src), (len) );}
 
 /*
  ******************************************************************************
@@ -507,9 +507,9 @@ uint32_t rfalNfcDepCalculateRWT( uint8_t wt );
  * \param[out]  atrRes    : location to store the ATR_RES
  * \param[out]  atrResLen : length of the ATR_RES received
  * 
- * \return ERR_NONE    : No error
- * \return ERR_TIMEOUT : Timeout occurred
- * \return ERR_PROTO   : Protocol error occurred
+ * \return RFAL_ERR_NONE    : No error
+ * \return RFAL_ERR_TIMEOUT : Timeout occurred
+ * \return RFAL_ERR_PROTO   : Protocol error occurred
  ******************************************************************************
  */
 ReturnCode rfalNfcDepATR( const rfalNfcDepAtrParam* param, rfalNfcDepAtrRes *atrRes, uint8_t* atrResLen );
@@ -527,9 +527,9 @@ ReturnCode rfalNfcDepATR( const rfalNfcDepAtrParam* param, rfalNfcDepAtrRes *atr
  * \param[in] BRS : the selected Bit Rates for Initiator and Target
  * \param[in] FSL : the maximum length of Commands and Responses
  * 
- * \return ERR_NONE    : No error
- * \return ERR_TIMEOUT : Timeout occurred
- * \return ERR_PROTO   : Protocol error occurred
+ * \return RFAL_ERR_NONE    : No error
+ * \return RFAL_ERR_TIMEOUT : Timeout occurred
+ * \return RFAL_ERR_PROTO   : Protocol error occurred
  ******************************************************************************
  */
 ReturnCode rfalNfcDepPSL( uint8_t BRS, uint8_t FSL );
@@ -544,10 +544,10 @@ ReturnCode rfalNfcDepPSL( uint8_t BRS, uint8_t FSL );
  * 
  * In case of performing as target no action is taken 
  * 
- * \return ERR_NONE       : No error
- * \return ERR_TIMEOUT    : Timeout occurred
- * \return ERR_MAX_RERUNS : Timeout occurred
- * \return ERR_PROTO      : Protocol error occurred
+ * \return RFAL_ERR_NONE       : No error
+ * \return RFAL_ERR_TIMEOUT    : Timeout occurred
+ * \return RFAL_ERR_MAX_RERUNS : Timeout occurred
+ * \return RFAL_ERR_PROTO      : Protocol error occurred
  ******************************************************************************
  */
 ReturnCode rfalNfcDepDSL( void );
@@ -562,10 +562,10 @@ ReturnCode rfalNfcDepDSL( void );
  * 
  * In case of performing as target no action is taken 
  * 
- * \return ERR_NONE       : No error
- * \return ERR_TIMEOUT    : Timeout occurred
- * \return ERR_MAX_RERUNS : Timeout occurred
- * \return ERR_PROTO      : Protocol error occurred
+ * \return RFAL_ERR_NONE       : No error
+ * \return RFAL_ERR_TIMEOUT    : Timeout occurred
+ * \return RFAL_ERR_MAX_RERUNS : Timeout occurred
+ * \return RFAL_ERR_PROTO      : Protocol error occurred
  ******************************************************************************
  */
 ReturnCode rfalNfcDepRLS( void );
@@ -584,15 +584,15 @@ ReturnCode rfalNfcDepRLS( void );
  *  \param[in]  desiredBR : Desired bit rate supported by the Poller
  *  \param[out] nfcDepDev : NFC-DEP information of the activated Listen device
  *
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, activation successful
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, activation successful
  *****************************************************************************
  */
 ReturnCode rfalNfcDepInitiatorHandleActivation( rfalNfcDepAtrParam* param, rfalBitRate desiredBR, rfalNfcDepDevice* nfcDepDev );
@@ -648,7 +648,7 @@ bool rfalNfcDepTargetRcvdATR( void );
  *       ongoing activation
  * 
  * \warning nfcDepGetTransceiveStatus() shall be called right after activation 
- * is completed (i.e. rfalNfcDepListenGetActivationStatus() return ERR_NONE) 
+ * is completed (i.e. rfalNfcDepListenGetActivationStatus() return RFAL_ERR_NONE) 
  * to check for first received frame.
  * 
  * \param[in]  param       : Target parameters to be used
@@ -657,9 +657,9 @@ bool rfalNfcDepTargetRcvdATR( void );
  * \param[out] rxParam     : references to buffer, length and chaining indication 
  *                           for first complete LLCP to be received
  * 
- * \return ERR_NONE      : ATR_REQ is valid and activation ongoing
- * \return ERR_PARAM     : ATR_REQ or other params are invalid
- * \return ERR_LINK_LOSS : Remote Field is turned off
+ * \return RFAL_ERR_NONE      : ATR_REQ is valid and activation ongoing
+ * \return RFAL_ERR_PARAM     : ATR_REQ or other params are invalid
+ * \return RFAL_ERR_LINK_LOSS : Remote Field is turned off
  *****************************************************************************
  */
 ReturnCode rfalNfcDepListenStartActivation( const rfalNfcDepTargetParam *param, const uint8_t *atrReq, uint16_t atrReqLength, rfalNfcDepListenActvParam rxParam );
@@ -669,9 +669,9 @@ ReturnCode rfalNfcDepListenStartActivation( const rfalNfcDepTargetParam *param, 
  *****************************************************************************
  * \brief Get the current NFC-DEP Activation Status
  * 
- * \return ERR_NONE      : Activation has completed successfully
- * \return ERR_BUSY      : Activation is ongoing
- * \return ERR_LINK_LOSS : Remote Field was turned off
+ * \return RFAL_ERR_NONE      : Activation has completed successfully
+ * \return RFAL_ERR_BUSY      : Activation is ongoing
+ * \return RFAL_ERR_LINK_LOSS : Remote Field was turned off
  *****************************************************************************
  */
 ReturnCode rfalNfcDepListenGetActivationStatus( void );
@@ -690,9 +690,9 @@ ReturnCode rfalNfcDepListenGetActivationStatus( void );
  * 
  * \param[in] param: reference parameters to be used for the Transceive
  *                    
- * \return ERR_PARAM       : Bad request
- * \return ERR_WRONG_STATE : The module is not in a proper state
- * \return ERR_NONE        : The Transceive request has been started
+ * \return RFAL_ERR_PARAM       : Bad request
+ * \return RFAL_ERR_WRONG_STATE : The module is not in a proper state
+ * \return RFAL_ERR_NONE        : The Transceive request has been started
  *****************************************************************************
  */
 ReturnCode rfalNfcDepStartTransceive( const rfalNfcDepTxRxParam *param );
@@ -705,23 +705,23 @@ ReturnCode rfalNfcDepStartTransceive( const rfalNfcDepTxRxParam *param );
  * Returns the status of the NFC-DEP Transceive
  * 
  * \warning  When the other device is performing chaining once a chained 
- *            block is received the error ERR_AGAIN is sent. At this point 
+ *            block is received the error RFAL_ERR_AGAIN is sent. At this point 
  *            caller must handle the received data immediately. 
- *            When ERR_AGAIN is returned an ACK has already been sent to 
+ *            When RFAL_ERR_AGAIN is returned an ACK has already been sent to 
  *            the other device and the next block might be incoming. 
  *            If rfalWorker() is called frequently it will place the next 
  *            block on the given buffer  
  * 
- * \return ERR_NONE      : Transceive has been completed successfully
- * \return ERR_BUSY      : Transceive is ongoing
- * \return ERR_PROTO     : Protocol error occurred
- * \return ERR_TIMEOUT   : Timeout error occurred
- * \return ERR_SLEEP_REQ : Deselect has been received and responded
- * \return ERR_NOMEM     : The received I-PDU does not fit into the
+ * \return RFAL_ERR_NONE      : Transceive has been completed successfully
+ * \return RFAL_ERR_BUSY      : Transceive is ongoing
+ * \return RFAL_ERR_PROTO     : Protocol error occurred
+ * \return RFAL_ERR_TIMEOUT   : Timeout error occurred
+ * \return RFAL_ERR_SLEEP_REQ : Deselect has been received and responded
+ * \return RFAL_ERR_NOMEM     : The received I-PDU does not fit into the
  *                            receive buffer
- * \return ERR_LINK_LOSS : Communication is lost because Reader/Writer 
+ * \return RFAL_ERR_LINK_LOSS : Communication is lost because Reader/Writer 
  *                            has turned off its field
- * \return ERR_AGAIN     : received one chaining block, continue to call
+ * \return RFAL_ERR_AGAIN     : received one chaining block, continue to call
  *                            this method to retrieve the remaining blocks
  *****************************************************************************
  */
@@ -744,9 +744,9 @@ ReturnCode rfalNfcDepGetTransceiveStatus( void );
  * 
  * \param[in] param: reference parameters to be used for the Transceive
  *                    
- * \return ERR_PARAM       : Bad request
- * \return ERR_WRONG_STATE : The module is not in a proper state
- * \return ERR_NONE        : The Transceive request has been started
+ * \return RFAL_ERR_PARAM       : Bad request
+ * \return RFAL_ERR_WRONG_STATE : The module is not in a proper state
+ * \return RFAL_ERR_NONE        : The Transceive request has been started
  *****************************************************************************
  */
 ReturnCode rfalNfcDepStartPduTransceive( rfalNfcDepPduTxRxParam param );
@@ -754,19 +754,19 @@ ReturnCode rfalNfcDepStartPduTransceive( rfalNfcDepPduTxRxParam param );
 
 /*!
  *****************************************************************************
- * \brief Return the PSU Transceive status
+ * \brief Return the PDU Transceive status
  *
  * Returns the status of the NFC-DEP PDU Transceive
  * 
  * 
- * \return ERR_NONE      : Transceive has been completed successfully
- * \return ERR_BUSY      : Transceive is ongoing
- * \return ERR_PROTO     : Protocol error occurred
- * \return ERR_TIMEOUT   : Timeout error occurred
- * \return ERR_SLEEP_REQ : Deselect has been received and responded
- * \return ERR_NOMEM     : The received I-PDU does not fit into the
+ * \return RFAL_ERR_NONE      : Transceive has been completed successfully
+ * \return RFAL_ERR_BUSY      : Transceive is ongoing
+ * \return RFAL_ERR_PROTO     : Protocol error occurred
+ * \return RFAL_ERR_TIMEOUT   : Timeout error occurred
+ * \return RFAL_ERR_SLEEP_REQ : Deselect has been received and responded
+ * \return RFAL_ERR_NOMEM     : The received I-PDU does not fit into the
  *                            receive buffer
- * \return ERR_LINK_LOSS : Communication is lost because Reader/Writer 
+ * \return RFAL_ERR_LINK_LOSS : Communication is lost because Reader/Writer 
  *                            has turned off its field
  *****************************************************************************
  */

@@ -55,8 +55,8 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_rf.h"
 #include "rfal_isoDep.h"
 
@@ -158,9 +158,9 @@ typedef enum
  * \param[in,out] apduParam : APDU parameters
  *                            apduParam.cApduLen will contain the APDU length 
  * 
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT4TPollerComposeCAPDU( const rfalT4tCApduParam *apduParam );
@@ -177,10 +177,10 @@ ReturnCode rfalT4TPollerComposeCAPDU( const rfalT4tCApduParam *apduParam );
  *                            apduParam.rApduBodyLen will contain the data length 
  *                            apduParam.statusWord will contain the SW1 and SW2 
  * 
- * \return ERR_REQUEST      : Status word (SW1 SW2) different from 9000
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_REQUEST      : Status word (SW1 SW2) different from 9000
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT4TPollerParseRAPDU( rfalT4tRApduParam *apduParam );
@@ -201,9 +201,9 @@ ReturnCode rfalT4TPollerParseRAPDU( rfalT4tRApduParam *apduParam );
  * \param[in]      aidLen   : Application ID length
  * \param[out]     cApduLen : Composed C-APDU length
  * 
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT4TPollerComposeSelectAppl( rfalIsoDepApduBufFormat *cApduBuf, const uint8_t* aid, uint8_t aidLen, uint16_t *cApduLen );
@@ -224,9 +224,9 @@ ReturnCode rfalT4TPollerComposeSelectAppl( rfalIsoDepApduBufFormat *cApduBuf, co
  * \param[in]      fidLen   : File ID length
  * \param[out]     cApduLen : Composed C-APDU length
  * 
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT4TPollerComposeSelectFile( rfalIsoDepApduBufFormat *cApduBuf, const uint8_t* fid, uint8_t fidLen, uint16_t *cApduLen );
@@ -247,9 +247,9 @@ ReturnCode rfalT4TPollerComposeSelectFile( rfalIsoDepApduBufFormat *cApduBuf, co
  * \param[in]      fidLen   : File ID length
  * \param[out]     cApduLen : Composed C-APDU length
  * 
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT4TPollerComposeSelectFileV1Mapping( rfalIsoDepApduBufFormat *cApduBuf, const uint8_t* fid, uint8_t fidLen, uint16_t *cApduLen );
@@ -270,9 +270,9 @@ ReturnCode rfalT4TPollerComposeSelectFileV1Mapping( rfalIsoDepApduBufFormat *cAp
  * \param[in]      expLen   : Expected length (Le)
  * \param[out]     cApduLen : Composed C-APDU length
  * 
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT4TPollerComposeReadData( rfalIsoDepApduBufFormat *cApduBuf, uint16_t offset, uint8_t expLen, uint16_t *cApduLen );
@@ -293,9 +293,9 @@ ReturnCode rfalT4TPollerComposeReadData( rfalIsoDepApduBufFormat *cApduBuf, uint
  * \param[in]      expLen   : Expected length (Le)
  * \param[out]     cApduLen : Composed C-APDU length
  * 
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT4TPollerComposeReadDataODO( rfalIsoDepApduBufFormat *cApduBuf, uint32_t offset, uint8_t expLen, uint16_t *cApduLen );
@@ -317,9 +317,9 @@ ReturnCode rfalT4TPollerComposeReadDataODO( rfalIsoDepApduBufFormat *cApduBuf, u
  * \param[in]      dataLen  : Data length to be written (Lc)
  * \param[out]     cApduLen : Composed C-APDU length
  * 
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT4TPollerComposeWriteData( rfalIsoDepApduBufFormat *cApduBuf, uint16_t offset, const uint8_t* data, uint8_t dataLen, uint16_t *cApduLen );
@@ -341,9 +341,9 @@ ReturnCode rfalT4TPollerComposeWriteData( rfalIsoDepApduBufFormat *cApduBuf, uin
  * \param[in]      dataLen  : Data length to be written (Lc)
  * \param[out]     cApduLen : Composed C-APDU length
  * 
- * \return ERR_PARAM        : Invalid parameter
- * \return ERR_PROTO        : Protocol error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_PARAM        : Invalid parameter
+ * \return RFAL_ERR_PROTO        : Protocol error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalT4TPollerComposeWriteDataODO( rfalIsoDepApduBufFormat *cApduBuf, uint32_t offset, const uint8_t* data, uint8_t dataLen, uint16_t *cApduLen );

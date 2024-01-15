@@ -39,13 +39,12 @@
 ******************************************************************************
 */
 #include "st25r3916_aat.h"
-#include "utils.h"
-#include "st_errno.h"
+#include "rfal_utils.h"
 #include "st25r3916.h"
 #include "st25r3916_com.h"
-#include "platform.h"
+#include "rfal_platform.h"
 #include "rfal_chip.h"
-#include <stdlib.h>
+
 
 /*
 ******************************************************************************
@@ -113,7 +112,7 @@ ReturnCode st25r3916AatTune(const struct st25r3916AatTuneParams *tuningParams, s
        || (tp->aat_b_start > tp->aat_b_max )
        ))
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
 
     if (NULL == tp)
@@ -135,7 +134,7 @@ ReturnCode st25r3916AatTune(const struct st25r3916AatTuneParams *tuningParams, s
 /*******************************************************************************/
 static ReturnCode aatHillClimb(const struct st25r3916AatTuneParams *tuningParams, struct st25r3916AatTuneResult *tuningStatus)
 {
-    ReturnCode  err = ERR_NONE;
+    ReturnCode  err = RFAL_ERR_NONE;
     uint32_t f_min;
     int32_t direction, gdirection;
     uint8_t amp,phs;
@@ -158,21 +157,21 @@ static ReturnCode aatHillClimb(const struct st25r3916AatTuneParams *tuningParams
             direction = aatSteepestDescent(&f_min, &tp, tuningStatus, direction, -direction);
             if (tuningStatus->measureCnt > tp.measureLimit)
             {
-                err = ERR_OVERRUN;
+                err = RFAL_ERR_OVERRUN;
                 break;
             }
             do
             {
                 gdirection = aatGreedyDescent(&f_min, &tp, tuningStatus, direction);
                 if (tuningStatus->measureCnt > tp.measureLimit) {
-                    err = ERR_OVERRUN;
+                    err = RFAL_ERR_OVERRUN;
                     break;
                 }
             } while (0 != gdirection);
         } while (0 != direction);
         tp.aat_a_stepWidth /= 2U; /* Reduce step sizes */
         tp.aat_b_stepWidth /= 2U;
-    } while (tp.doDynamicSteps && ((tp.aat_a_stepWidth>0U) || (tp.aat_b_stepWidth>0U)));
+    } while ((tp.doDynamicSteps) && ((tp.aat_a_stepWidth>0U) || (tp.aat_b_stepWidth>0U)));
     
     return err;
 }
@@ -275,22 +274,22 @@ static ReturnCode aatStepDacVals(const struct st25r3916AatTuneParams *tuningPara
             aat_a = (dir<0)?(aat_a - (int16_t)tuningParams->aat_a_stepWidth):(aat_a + (int16_t)tuningParams->aat_a_stepWidth);
             if(aat_a < (int16_t)tuningParams->aat_a_min){ aat_a = (int16_t)tuningParams->aat_a_min; }
             if(aat_a > (int16_t)tuningParams->aat_a_max){ aat_a = (int16_t)tuningParams->aat_a_max; }
-            if ((int16_t)*a == aat_a) {return ERR_PARAM;}
+            if ((int16_t)*a == aat_a) {return RFAL_ERR_PARAM;}
             break;
         case 2:
             aat_b = (dir<0)?(aat_b - (int16_t)tuningParams->aat_b_stepWidth):(aat_b + (int16_t)tuningParams->aat_b_stepWidth);
             if(aat_b < (int16_t)tuningParams->aat_b_min){ aat_b = (int16_t)tuningParams->aat_b_min; }
             if(aat_b > (int16_t)tuningParams->aat_b_max){ aat_b = (int16_t)tuningParams->aat_b_max; }
-            if ((int16_t)*b == aat_b) {return ERR_PARAM;}
+            if ((int16_t)*b == aat_b) {return RFAL_ERR_PARAM;}
             break;
         default:
-            return ERR_REQUEST;
+            return RFAL_ERR_REQUEST;
     }
     /* We only get here if actual values have changed. In all other cases an error is returned */
     *a = (uint8_t)aat_a; 
     *b = (uint8_t)aat_b;
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 
 }
 
@@ -310,7 +309,7 @@ static ReturnCode aatMeasure(uint8_t serCap, uint8_t parCap, uint8_t *amplitude,
     
     /* Get amplitude and phase .. */
     err = rfalChipMeasureAmplitude(amplitude);
-    if (ERR_NONE == err)
+    if (RFAL_ERR_NONE == err)
     {
         err = rfalChipMeasurePhase(phase);
     }

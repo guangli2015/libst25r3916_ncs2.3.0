@@ -37,7 +37,7 @@
  ******************************************************************************
  */
  #include "rfal_t2t.h"
- #include "utils.h"
+ #include "rfal_utils.h"
  
  /*
  ******************************************************************************
@@ -131,7 +131,7 @@ typedef struct
      
     if( (rxBuf == NULL) || (rcvLen == NULL) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     req.code = (uint8_t)RFAL_T2T_CMD_READ;
@@ -141,9 +141,9 @@ typedef struct
     ret = rfalTransceiveBlockingTxRx( (uint8_t*)&req, sizeof(rfalT2TReadReq), rxBuf, rxBufLen, rcvLen, RFAL_TXRX_FLAGS_DEFAULT, RFAL_FDT_POLL_READ_MAX );
     
     /* T2T 1.0 5.2.1.7 The Reader/Writer SHALL treat a NACK in response to a READ Command as a Protocol Error */
-    if( (ret == ERR_INCOMPLETE_BYTE) && (*rcvLen == RFAL_T2T_ACK_NACK_LEN) && ((*rxBuf & RFAL_T2T_ACK_MASK) != RFAL_T2T_ACK) )
+    if( (ret == RFAL_ERR_INCOMPLETE_BYTE) && (*rcvLen == RFAL_T2T_ACK_NACK_LEN) && ((*rxBuf & RFAL_T2T_ACK_MASK) != RFAL_T2T_ACK) )
     {
-        return ERR_PROTO;
+        return RFAL_ERR_PROTO;
     }
     return ret;
  }
@@ -159,20 +159,20 @@ typedef struct
     
     req.code = (uint8_t)RFAL_T2T_CMD_WRITE;
     req.blNo = blockNum;
-    ST_MEMCPY(req.data, wrData, RFAL_T2T_WRITE_DATA_LEN);
+    RFAL_MEMCPY(req.data, wrData, RFAL_T2T_WRITE_DATA_LEN);
     
      
     /* Transceive WRITE Command */
     ret = rfalTransceiveBlockingTxRx( (uint8_t*)&req, sizeof(rfalT2TWriteReq), &res, sizeof(uint8_t), &rxLen, RFAL_TXRX_FLAGS_DEFAULT, RFAL_FDT_POLL_WRITE_MAX );
     
     /* Check for a valid ACK */
-    if( (ret == ERR_INCOMPLETE_BYTE) || (ret == ERR_NONE) )
+    if( (ret == RFAL_ERR_INCOMPLETE_BYTE) || (ret == RFAL_ERR_NONE) )
     {
-        ret = ERR_PROTO;
+        ret = RFAL_ERR_PROTO;
         
         if( (rxLen == RFAL_T2T_ACK_NACK_LEN) && ((res & RFAL_T2T_ACK_MASK) == RFAL_T2T_ACK) )
         {
-            ret = ERR_NONE;
+            ret = RFAL_ERR_NONE;
         }
     }
     
@@ -198,36 +198,36 @@ typedef struct
     ret = rfalTransceiveBlockingTxRx( (uint8_t*)&p1Req, sizeof(rfalT2TSectorSelectP1Req), &res, sizeof(uint8_t), &rxLen, RFAL_TXRX_FLAGS_DEFAULT, RFAL_FDT_POLL_SL_MAX );
     
     /* Check and report any transmission error */
-    if( (ret != ERR_INCOMPLETE_BYTE) && (ret != ERR_NONE) )
+    if( (ret != RFAL_ERR_INCOMPLETE_BYTE) && (ret != RFAL_ERR_NONE) )
     {
         return ret;
     }
     
     /* Ensure that an ACK was received */
-    if( (ret != ERR_INCOMPLETE_BYTE) || (rxLen != RFAL_T2T_ACK_NACK_LEN) || ((res & RFAL_T2T_ACK_MASK) != RFAL_T2T_ACK) )
+    if( (ret != RFAL_ERR_INCOMPLETE_BYTE) || (rxLen != RFAL_T2T_ACK_NACK_LEN) || ((res & RFAL_T2T_ACK_MASK) != RFAL_T2T_ACK) )
     {
-        return ERR_PROTO;
+        return RFAL_ERR_PROTO;
     }
     
     
     /* Compute SECTOR SELECT Packet 2  */
     p2Req.secNo  = sectorNum;
-    ST_MEMSET( &p2Req.rfu, 0x00, RFAL_T2T_SECTOR_SELECT_P2_RFU_LEN );
+    RFAL_MEMSET( &p2Req.rfu, 0x00, RFAL_T2T_SECTOR_SELECT_P2_RFU_LEN );
     
     
     /* Transceive SECTOR SELECT Packet 2 */
     ret = rfalTransceiveBlockingTxRx( (uint8_t*)&p2Req, sizeof(rfalT2TSectorSelectP2Req), &res, sizeof(uint8_t), &rxLen, RFAL_TXRX_FLAGS_DEFAULT, RFAL_FDT_POLL_SL_MAX );
     
     /* T2T 1.0 5.4.1.14 The Reader/Writer SHALL treat any response received before the end of PATT2T,SL,MAX as a Protocol Error */
-    if( (ret == ERR_NONE) || (ret == ERR_INCOMPLETE_BYTE) )
+    if( (ret == RFAL_ERR_NONE) || (ret == RFAL_ERR_INCOMPLETE_BYTE) )
     {
-        return ERR_PROTO;
+        return RFAL_ERR_PROTO;
     }
     
     /* T2T 1.0 5.4.1.13 The Reader/Writer SHALL treat the transmission of the SECTOR SELECT Command Packet 2 as being successful when it receives no response until PATT2T,SL,MAX. */ 
-    if( ret == ERR_TIMEOUT )
+    if( ret == RFAL_ERR_TIMEOUT )
     {
-        return ERR_NONE;
+        return RFAL_ERR_NONE;
     }
     
     return ret;

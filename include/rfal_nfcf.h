@@ -53,8 +53,8 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_rf.h"
 
 /*
@@ -67,7 +67,7 @@
 #define RFAL_NFCF_SENSF_RES_LEN_MIN             16U      /*!< SENSF_RES minimum length                          */
 #define RFAL_NFCF_SENSF_RES_LEN_MAX             18U      /*!< SENSF_RES maximum length                          */
 #define RFAL_NFCF_SENSF_RES_PAD0_LEN            2U       /*!< SENSF_RES PAD0 length                             */
-#define RFAL_NFCF_SENSF_RES_PAD1_LEN            2U       /*!< SENSF_RES PAD1 length                             */
+#define RFAL_NFCF_SENSF_RES_PAD1_LEN            3U       /*!< SENSF_RES PAD1 length                             */
 #define RFAL_NFCF_SENSF_RES_RD_LEN              2U       /*!< SENSF_RES Request Data length                     */
 #define RFAL_NFCF_SENSF_RES_BYTE1               1U       /*!< SENSF_RES first byte value                        */
 #define RFAL_NFCF_SENSF_SC_LEN                  2U       /*!< Felica SENSF_REQ System Code length               */
@@ -94,7 +94,8 @@
 #define RFAL_NFCF_SENSF_NFCID2_BYTE1_NFCDEP      0x01U   /*!< NFCID2 byte1 NFC-DEP support            Digital 1.0 Table 44 */
 #define RFAL_NFCF_SENSF_NFCID2_BYTE2_NFCDEP      0xFEU   /*!< NFCID2 byte2 NFC-DEP support            Digital 1.0 Table 44 */
 
-#define RFAL_NFCF_SYSTEMCODE                     0xFFFFU /*!< SENSF_RES Default System Code            Digital 1.0 6.6.1.1 */
+#define RFAL_NFCF_SYSTEMCODE                     0xFFFFU /*!< SENSF_RES Default System Code            Digital 2.3 8.6.1.5 */
+#define RFAL_NFCF_SYSTEMCODE_LEN                 2U      /*!< SENSF_RES System Code length             Digital 2.3 8.6.1   */
 
 #define RFAL_NFCF_BLOCK_LEN                      16U     /*!< NFCF T3T Block size                        T3T 1.0  4.1      */
 #define RFAL_NFCF_CHECKUPDATE_RES_ST1_POS        9U      /*!< Check|Update Res Status Flag 1 position    T3T 1.0  Table 8  */
@@ -109,6 +110,9 @@
 
 #define RFAL_NFCF_SERVICECODE_RDONLY             0x000BU /*!< NDEF Service Code as Read-Only                 T3T 1.0 7.2.1 */
 #define RFAL_NFCF_SERVICECODE_RDWR               0x0009U /*!< NDEF Service Code as Read and Write            T3T 1.0 7.2.1 */
+
+#define RFAL_NFCF_TEST_LB_CMD0                   0xD8U /*!< T3T loopback CMD0                 ETSI TS 102 695-1  5.6.4.4.2 */
+#define RFAL_NFCF_TEST_LB_CMD1                   0x00U /*!< T3T loopback CMD1                 ETSI TS 102 695-1  5.6.4.4.2 */
 
 
 /*! NFC-F Felica command set   JIS X6319-4  9.1 */
@@ -208,9 +212,9 @@ typedef struct
  * 
  * \param[in]  bitRate      : NFC-F bitrate to be initialize (212 or 424)
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Incorrect bitrate
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Incorrect bitrate
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcfPollerInitialize( rfalBitRate bitRate );
@@ -223,14 +227,14 @@ ReturnCode rfalNfcfPollerInitialize( rfalBitRate bitRate );
  *  This function sends a Poll/SENSF command according to NFC Activity spec
  *  It detects if a NCF-F device is within range
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error 
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_NONE         : No error and some NFC-F device was detected
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_NONE         : No error and some NFC-F device was detected
  *
  *****************************************************************************
  */
@@ -244,9 +248,9 @@ ReturnCode rfalNfcfPollerCheckPresence( void );
  *  This function triggers a Poll/SENSF command according to NFC Activity spec
  *  It detects if a NCF-F device is within range
  * 
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_NONE         : No error and some NFC-F device was detected
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_NONE         : No error and some NFC-F device was detected
  *
  *****************************************************************************
  */
@@ -260,12 +264,12 @@ ReturnCode rfalNfcfPollerStartCheckPresence( void );
  *  This function gets the status of the Check Presense operation
  *  triggered by rfalNfcfPollerStartCheckPresence()
  * 
- * \return ERR_IO           : Generic internal error 
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_NONE         : No error and some NFC-F device was detected
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_NONE         : No error and some NFC-F device was detected
  *
  *****************************************************************************
  */
@@ -288,14 +292,14 @@ ReturnCode rfalNfcfPollerGetCheckPresenceStatus( void );
  *
  * \warning the list cardList has to be as big as the number of slots for the Poll
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error 
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_NONE         : No error and some NFC-F device was detected
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_NONE         : No error and some NFC-F device was detected
  *
  *****************************************************************************
  */
@@ -313,10 +317,10 @@ ReturnCode rfalNfcfPollerPoll( rfalFeliCaPollSlots slots, uint16_t sysCode, uint
  * \param[out] nfcfDevList : NFC-F listener devices list
  * \param[out] devCnt      : Devices found counter
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcfPollerCollisionResolution( rfalComplianceMode compMode, uint8_t devLimit, rfalNfcfListenDevice *nfcfDevList, uint8_t *devCnt );
@@ -333,10 +337,10 @@ ReturnCode rfalNfcfPollerCollisionResolution( rfalComplianceMode compMode, uint8
  * \param[out] nfcfDevList : NFC-F listener devices list
  * \param[out] devCnt      : Devices found counter
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcfPollerStartCollisionResolution( rfalComplianceMode compMode, uint8_t devLimit, rfalNfcfListenDevice *nfcfDevList, uint8_t *devCnt );
@@ -349,12 +353,12 @@ ReturnCode rfalNfcfPollerStartCollisionResolution( rfalComplianceMode compMode, 
  *  This function gets the status of the Collision Resolution operation
  *  triggered by rfalNfcfPollerStartCollisionResolution()
  * 
- * \return ERR_IO           : Generic internal error 
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_NONE         : No error and some NFC-F device was detected
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_NONE         : No error and some NFC-F device was detected
  *
  *****************************************************************************
  */
@@ -376,11 +380,11 @@ ReturnCode rfalNfcfPollerGetCollisionResolutionStatus( void );
  * \param[in]  rxBufLen    : size of the rxBuf
  * \param[out] rcvdLen     : length of data placed in rxBuf
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_REQUEST      : The request was executed with error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_REQUEST      : The request was executed with error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcfPollerCheck( const uint8_t* nfcid2, const rfalNfcfServBlockListParam *servBlock, uint8_t *rxBuf, uint16_t rxBufLen, uint16_t *rcvdLen );
@@ -402,11 +406,11 @@ ReturnCode rfalNfcfPollerCheck( const uint8_t* nfcid2, const rfalNfcfServBlockLi
  * \param[out] rxBuf       : buffer to place check/read data 
  * \param[in]  rxBufLen    : size of the rxBuf
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_REQUEST      : The request was executed with error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_REQUEST      : The request was executed with error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcfPollerUpdate( const uint8_t* nfcid2, const rfalNfcfServBlockListParam *servBlock, uint8_t *txBuf, uint16_t txBufLen, const uint8_t *blockData, uint8_t *rxBuf, uint16_t rxBufLen);

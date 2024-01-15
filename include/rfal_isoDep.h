@@ -53,7 +53,7 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
+#include "rfal_platform.h"
 #include "rfal_nfcb.h"
 
 
@@ -574,10 +574,10 @@ bool rfalIsoDepIsAttrib( const uint8_t *buf, uint8_t bufLen );
  *  The first data will be processed (I-Block or S-DSL) by rfalIsoDepGetTransceiveStatus()
  *  inform the caller and then for the next transaction use rfalIsoDepStartTransceive()
  * 
- *  \return ERR_NONE    : RATS/ATTRIB is valid and activation has started
- *  \return ERR_PARAM   : Invalid parameters
- *  \return ERR_PROTO   : Invalid request
- *  \return ERR_NOTSUPP : Feature not supported
+ *  \return RFAL_ERR_NONE    : RATS/ATTRIB is valid and activation has started
+ *  \return RFAL_ERR_PARAM   : Invalid parameters
+ *  \return RFAL_ERR_PROTO   : Invalid request
+ *  \return RFAL_ERR_NOTSUPP : Feature not supported
  *****************************************************************************
  */
 ReturnCode rfalIsoDepListenStartActivation( rfalIsoDepAtsParam *atsParam, const rfalIsoDepAttribResParam *attribResParam, const uint8_t *buf, uint16_t bufLen, rfalIsoDepListenActvParam actParam );
@@ -587,9 +587,9 @@ ReturnCode rfalIsoDepListenStartActivation( rfalIsoDepAtsParam *atsParam, const 
  *****************************************************************************
  *  \brief Get the current Activation Status
  * 
- *  \return ERR_NONE if Activation is already completed
- *  \return ERR_BUSY if Activation is ongoing
- *  \return ERR_LINK_LOSS if Remote Field is turned off
+ *  \return RFAL_ERR_NONE if Activation is already completed
+ *  \return RFAL_ERR_BUSY if Activation is ongoing
+ *  \return RFAL_ERR_LINK_LOSS if Remote Field is turned off
  *****************************************************************************
  */
 ReturnCode rfalIsoDepListenGetActivationStatus( void );
@@ -625,9 +625,9 @@ uint16_t rfalIsoDepGetMaxInfLen( void );
  *  
  *  \param[in] param: reference parameters to be used for the Transceive
  *                     
- *  \return ERR_PARAM       : Bad request
- *  \return ERR_WRONG_STATE : The module is not in a proper state
- *  \return ERR_NONE        : The Transceive request has been started
+ *  \return RFAL_ERR_PARAM       : Bad request
+ *  \return RFAL_ERR_WRONG_STATE : The module is not in a proper state
+ *  \return RFAL_ERR_NONE        : The Transceive request has been started
  *****************************************************************************
  */
 ReturnCode rfalIsoDepStartTransceive( rfalIsoDepTxRxParam param );
@@ -640,25 +640,25 @@ ReturnCode rfalIsoDepStartTransceive( rfalIsoDepTxRxParam param );
  *  Returns the status of the ISO-DEP Transceive
  *  
  *  \warning  When the other device is performing chaining once a chained 
- *            block is received the error ERR_AGAIN is sent. At this point 
+ *            block is received the error RFAL_ERR_AGAIN is sent. At this point 
  *            caller must handle the received data immediately. 
- *            When ERR_AGAIN is returned an ACK has already been sent to 
+ *            When RFAL_ERR_AGAIN is returned an ACK has already been sent to 
  *            the other device and the next block might be incoming. 
  *            If rfalWorker() is called frequently it will place the next 
  *            block on the given buffer  
  *              
  *  
- *  \return ERR_NONE      : Transceive has been completed successfully
- *  \return ERR_BUSY      : Transceive is ongoing
- *  \return ERR_PROTO     : Protocol error occurred
- *  \return ERR_TIMEOUT   : Timeout error occurred
- *  \return ERR_SLEEP_REQ : Deselect has been received and responded
- *  \return ERR_NOMEM     : The received INF does not fit into the
- *                            receive buffer
- *  \return ERR_LINK_LOSS : Communication is lost because Reader/Writer 
- *                            has turned off its field
- *  \return ERR_AGAIN     : received one chaining block, continue to call
- *                            this method to retrieve the remaining blocks
+ *  \return RFAL_ERR_NONE      : Transceive has been completed successfully
+ *  \return RFAL_ERR_BUSY      : Transceive is ongoing
+ *  \return RFAL_ERR_PROTO     : Protocol error occurred
+ *  \return RFAL_ERR_TIMEOUT   : Timeout error occurred
+ *  \return RFAL_ERR_SLEEP_REQ : Deselect has been received and responded
+ *  \return RFAL_ERR_NOMEM     : The received INF does not fit into the
+ *                                 receive buffer
+ *  \return RFAL_ERR_LINK_LOSS : Communication is lost because Reader/Writer 
+ *                                 has turned off its field
+ *  \return RFAL_ERR_AGAIN     : received one chaining block, continue to call
+ *                                 this method to retrieve the remaining blocks
  *****************************************************************************
  */
 ReturnCode rfalIsoDepGetTransceiveStatus( void );
@@ -680,9 +680,9 @@ ReturnCode rfalIsoDepGetTransceiveStatus( void );
  *  
  *  \param[in] param: reference parameters to be used for the Transceive
  *                     
- *  \return ERR_PARAM       : Bad request
- *  \return ERR_WRONG_STATE : The module is not in a proper state
- *  \return ERR_NONE        : The Transceive request has been started
+ *  \return RFAL_ERR_PARAM       : Bad request
+ *  \return RFAL_ERR_WRONG_STATE : The module is not in a proper state
+ *  \return RFAL_ERR_NONE        : The Transceive request has been started
  *****************************************************************************
  */
 ReturnCode rfalIsoDepStartApduTransceive( rfalIsoDepApduTxRxParam param );
@@ -692,15 +692,15 @@ ReturnCode rfalIsoDepStartApduTransceive( rfalIsoDepApduTxRxParam param );
  *****************************************************************************
  *  \brief Get the APDU Transceive status
  *  
- *  \return ERR_NONE      : if Transceive has been completed successfully
- *  \return ERR_BUSY      : if Transceive is ongoing
- *  \return ERR_PROTO     : if a protocol error occurred
- *  \return ERR_TIMEOUT   : if a timeout error occurred
- *  \return ERR_SLEEP_REQ : if Deselect is received and responded
- *  \return ERR_NOMEM     : if the received INF does not fit into the 
- *                            receive buffer
- *  \return ERR_LINK_LOSS : if communication is lost because Reader/Writer 
- *                            has turned off its field
+ *  \return RFAL_ERR_NONE      : if Transceive has been completed successfully
+ *  \return RFAL_ERR_BUSY      : if Transceive is ongoing
+ *  \return RFAL_ERR_PROTO     : if a protocol error occurred
+ *  \return RFAL_ERR_TIMEOUT   : if a timeout error occurred
+ *  \return RFAL_ERR_SLEEP_REQ : if Deselect is received and responded
+ *  \return RFAL_ERR_NOMEM     : if the received INF does not fit into the 
+ *                                 receive buffer
+ *  \return RFAL_ERR_LINK_LOSS : if communication is lost because Reader/Writer 
+ *                                 has turned off its field
  *****************************************************************************
  */
 ReturnCode rfalIsoDepGetApduTransceiveStatus( void );
@@ -717,15 +717,15 @@ ReturnCode rfalIsoDepGetApduTransceiveStatus( void );
  *  \param[out] ats    : pointer to place the ATS Response
  *  \param[out] atsLen : pointer to place the ATS length
  *
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, ATS received
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, ATS received
  *****************************************************************************
  */
 ReturnCode rfalIsoDepRATS( rfalIsoDepFSxI FSDI, uint8_t DID, rfalIsoDepAts *ats , uint8_t *atsLen );
@@ -744,15 +744,15 @@ ReturnCode rfalIsoDepRATS( rfalIsoDepFSxI FSDI, uint8_t DID, rfalIsoDepAts *ats 
  *  \param[in]  DRI    : DRI code the divisor from Poller (PCD) to Listener (PICC)
  *  \param[out] ppsRes : pointer to place the PPS Response
  *
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, PPS Response received
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, PPS Response received
  *****************************************************************************
  */
 ReturnCode rfalIsoDepPPS( uint8_t DID, rfalBitRate DSI, rfalBitRate DRI, rfalIsoDepPpsRes *ppsRes );
@@ -778,14 +778,14 @@ ReturnCode rfalIsoDepPPS( uint8_t DID, rfalBitRate DSI, rfalBitRate DRI, rfalIso
  *  \param[out] attribRes    : pointer to place the ATTRIB Response
  *  \param[out] attribResLen : pointer to place the ATTRIB Response length
  *
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, ATTRIB Response received
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, ATTRIB Response received
  *****************************************************************************
  */
 ReturnCode rfalIsoDepATTRIB( const uint8_t* nfcid0, uint8_t PARAM1, rfalBitRate DSI, rfalBitRate DRI, rfalIsoDepFSxI FSDI, uint8_t PARAM3, uint8_t DID, const uint8_t* HLInfo, uint8_t HLInfoLen, uint32_t fwt, rfalIsoDepAttribRes *attribRes, uint8_t *attribResLen );
@@ -793,17 +793,50 @@ ReturnCode rfalIsoDepATTRIB( const uint8_t* nfcid0, uint8_t PARAM1, rfalBitRate 
 
 /*! 
  *****************************************************************************
- *  \brief  Deselects PICC
+ *  \brief  Deselect PICC
  *
- *  This function sends a deselect command to PICC and waits for it`s
+ *  This function sends a deselect command to PICC and waits for its
  *  responce in a blocking way
  *
- *  \return ERR_NONE   : Deselect successfully sent and acknowledged by PICC 
- *  \return ERR_TIMEOUT: No response rcvd from PICC 
+ *  \return RFAL_ERR_NONE    : Deselect successfully sent and acknowledged by PICC 
+ *  \return RFAL_ERR_PROTO   : Protocol error occurred
+ *  \return RFAL_ERR_TIMEOUT : No response rcvd from PICC 
  *
  *****************************************************************************
  */
 ReturnCode rfalIsoDepDeselect( void );
+
+
+/*! 
+ *****************************************************************************
+ *  \brief  Start Deselect 
+ *
+ *  This function starts the exchange to send deselect command to PICC and 
+ *  waits for its response
+ *
+ *  \return RFAL_ERR_NONE    : Deselect successfully sent and acknowledged by PICC 
+ *  \return RFAL_ERR_PROTO   : Protocol error occurred
+ *  \return RFAL_ERR_TIMEOUT : No response rcvd from PICC 
+ *
+ *****************************************************************************
+ */
+ReturnCode rfalIsoDepStartDeselect( void );
+
+
+/*! 
+ *****************************************************************************
+ *  \brief  Deselect Get Status
+ *
+ *  This function sends a deselect command to PICC and waits for it`s
+ *  responce in a blocking way
+ *
+ *  \return RFAL_ERR_NONE    : Deselect successfully sent and acknowledged by PICC 
+ *  \return RFAL_ERR_PROTO   : Protocol error occurred
+ *  \return RFAL_ERR_TIMEOUT : No response rcvd from PICC 
+ *
+ *****************************************************************************
+ */
+ReturnCode rfalIsoDepGetDeselectStatus( void );
 
 
 /*! 
@@ -820,15 +853,15 @@ ReturnCode rfalIsoDepDeselect( void );
  *  \param[in]  maxBR         : Max bit rate supported by the Poller
  *  \param[out] rfalIsoDepDev : ISO-DEP information of the activated Listen device
  *
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, activation successful
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, activation successful
  *****************************************************************************
  */
 ReturnCode rfalIsoDepPollAHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, rfalIsoDepDevice *rfalIsoDepDev );
@@ -852,15 +885,15 @@ ReturnCode rfalIsoDepPollAHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rf
  *  \param[in]  HLInfoLen      : Length HLInfo
  *  \param[out] rfalIsoDepDev  : ISO-DEP information of the activated Listen device
  *
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, activation successful
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, activation successful
  *****************************************************************************
  */
 ReturnCode rfalIsoDepPollBHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, uint8_t PARAM1, const rfalNfcbListenDevice *nfcbDev, const uint8_t* HLInfo, uint8_t HLInfoLen, rfalIsoDepDevice *rfalIsoDepDev );
@@ -878,13 +911,13 @@ ReturnCode rfalIsoDepPollBHandleActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rf
  *  \param[in]  maxTxBR        : Maximum Tx bit rate supported by PCD
  *  \param[in]  maxRxBR        : Maximum Rx bit rate supported by PCD
  *
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, S(PARAMETERS) selection successful
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, S(PARAMETERS) selection successful
  *****************************************************************************
  */
 ReturnCode rfalIsoDepPollHandleSParameters( rfalIsoDepDevice *rfalIsoDepDev, rfalBitRate maxTxBR, rfalBitRate maxRxBR );
@@ -907,15 +940,15 @@ ReturnCode rfalIsoDepPollHandleSParameters( rfalIsoDepDevice *rfalIsoDepDev, rfa
  *  \param[in]  maxBR         : Max bit rate supported by the Poller
  *  \param[out] rfalIsoDepDev : ISO-DEP information of the activated Listen device
  *
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, start of asynchronous operation successful
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, start of asynchronous operation successful
  *****************************************************************************
  */
 ReturnCode rfalIsoDepPollAStartActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, rfalIsoDepDevice *rfalIsoDepDev );
@@ -929,16 +962,16 @@ ReturnCode rfalIsoDepPollAStartActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfa
  *
  *  \see rfalIsoDepPollAStartActivation
  *
- *  \return ERR_BUSY         : Operation is ongoing
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, activation successful
+ *  \return RFAL_ERR_BUSY         : Operation is ongoing
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, activation successful
  *****************************************************************************
  */
 ReturnCode rfalIsoDepPollAGetActivationStatus( void );
@@ -964,15 +997,15 @@ ReturnCode rfalIsoDepPollAGetActivationStatus( void );
  *  \param[in]  HLInfoLen     : Length HLInfo
  *  \param[out] rfalIsoDepDev : ISO-DEP information of the activated Listen device
  *
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, start of asynchronous operation successful
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, start of asynchronous operation successful
  *****************************************************************************
  */
 ReturnCode rfalIsoDepPollBStartActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfalBitRate maxBR, uint8_t PARAM1, const rfalNfcbListenDevice *nfcbDev, const uint8_t* HLInfo, uint8_t HLInfoLen, rfalIsoDepDevice *rfalIsoDepDev );
@@ -986,16 +1019,16 @@ ReturnCode rfalIsoDepPollBStartActivation( rfalIsoDepFSxI FSDI, uint8_t DID, rfa
  *
  *  \see rfalIsoDepPollBStartActivation
  *
- *  \return ERR_BUSY         : Operation is ongoing
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, activation successful
+ *  \return RFAL_ERR_BUSY         : Operation is ongoing
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, activation successful
  *****************************************************************************
  */
 ReturnCode rfalIsoDepPollBGetActivationStatus( void );

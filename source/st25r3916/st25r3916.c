@@ -36,11 +36,13 @@
 ******************************************************************************
 */
 
+#include "st_errno.h"
 #include "st25r3916.h"
 #include "st25r3916_com.h"
 #include "st25r3916_led.h"
 #include "st25r3916_irq.h"
-#include "utils.h"
+#include "rfal_utils.h"
+#include <stdio.h>
 #include <stdio.h>
 
 #include <zephyr/logging/log.h>
@@ -53,9 +55,9 @@ LOG_MODULE_DECLARE(st25r3916);
  ******************************************************************************
  */
  
-#ifndef ST25R3916
-#error "RFAL: Missing ST25R device selection. Please globally define ST25R3916."
-#endif /* ST25R3916 */
+#if !defined(ST25R3916) && !defined(ST25R3916B)
+#error "RFAL: Missing ST25R device selection. Please globally define ST25R3916 / ST25R3916B."
+#endif /* ST25R3916 | ST25R3916B */
 
 /*
 ******************************************************************************
@@ -71,6 +73,7 @@ LOG_MODULE_DECLARE(st25r3916);
 #define ST25R3916_TOUT_MEASURE_PHASE              10U     /*!< Max duration time of Measure Phase command         Datasheet: 25us  */
 #define ST25R3916_TOUT_MEASURE_CAPACITANCE        10U     /*!< Max duration time of Measure Capacitance command   Datasheet: 25us  */
 #define ST25R3916_TOUT_CALIBRATE_CAP_SENSOR       4U      /*!< Max duration Calibrate Capacitive Sensor command   Datasheet: 3ms   */
+#define ST25R3916_TOUT_CALIBRATE_AWS_RC           10U     /*!< Max duration Calibrate RC command                  Datasheet: 5ms   */
 #define ST25R3916_TOUT_ADJUST_REGULATORS          6U      /*!< Max duration time of Adjust Regulators command     Datasheet: 5ms   */
 #define ST25R3916_TOUT_CA                         10U     /*!< Max duration time of Collision Avoidance command                    */
                                                   
@@ -107,27 +110,6 @@ static uint32_t gST25R3916NRT_64fcs;
  ******************************************************************************
  */
 
-ReturnCode st25r3916ExecuteCommandAndGetResult( uint8_t cmd, uint8_t resReg, uint8_t tOut, uint8_t* result )
-{
-    /* Clear and enable Direct Command interrupt */
-    st25r3916GetInterrupt( ST25R3916_IRQ_MASK_DCT );
-    st25r3916EnableInterrupts( ST25R3916_IRQ_MASK_DCT );
-
-    st25r3916ExecuteCommand( cmd );
-
-    st25r3916WaitForInterruptsTimed( ST25R3916_IRQ_MASK_DCT, tOut );
-    st25r3916DisableInterrupts( ST25R3916_IRQ_MASK_DCT );
-
-    /* After execution read out the result if the pointer is not NULL */
-    if( result != NULL )
-    {
-        st25r3916ReadRegister( resReg, result);
-    }
-
-    return ERR_NONE;
-
-}
-
 /*
 ******************************************************************************
 * GLOBAL FUNCTIONS
@@ -155,7 +137,7 @@ ReturnCode st25r3916Initialize( void )
     if( !st25r3916CheckChipID( NULL ) )
     {
         platformErrorHandle();
-        return ERR_HW_MISMATCH;
+        return RFAL_ERR_HW_MISMATCH;
     }
 
    /* st25r3916InitInterrupts();*/
@@ -169,16 +151,17 @@ ReturnCode st25r3916Initialize( void )
     st25r3916SetRegisterBits(ST25R3916_REG_IO_CONF2, ( ST25R3916_REG_IO_CONF2_miso_pd1 | ST25R3916_REG_IO_CONF2_miso_pd2 ) );
 #endif /* RFAL_USE_I2C */
 
+#ifdef ST25R3916    
     /* Disable internal overheat protection */
     st25r3916ChangeTestRegisterBits( 0x04, 0x10, 0x10 );
-/*LOG_INF("st25r3916Initialize2");*/
+#endif /* ST25R3916 */
 
 #ifdef ST25R_SELFTEST
     /******************************************************************************
      * Check communication interface: 
      *  - write a pattern in a register
      *  - reads back the register value
-     *  - return ERR_IO in case the read value is different
+     *  - return RFAL_ERR_IO in case the read value is different
      */
     st25r3916WriteRegister( ST25R3916_REG_BIT_RATE, ST25R3916_TEST_REG_PATTERN );
     if( !st25r3916CheckReg( ST25R3916_REG_BIT_RATE, (ST25R3916_REG_BIT_RATE_rxrate_mask | ST25R3916_REG_BIT_RATE_txrate_mask), ST25R3916_TEST_REG_PATTERN ) )
@@ -194,35 +177,35 @@ ReturnCode st25r3916Initialize( void )
      * Check IRQ Handling:
      *  - use the Wake-up timer to trigger an IRQ
      *  - wait the Wake-up timer interrupt
-     *  - return ERR_TIMEOUT when the Wake-up timer interrupt is not received
+     *  - return RFAL_ERR_TIMEOUT when the Wake-up timer interrupt is not received
      */
     st25r3916WriteRegister( ST25R3916_REG_WUP_TIMER_CONTROL, ST25R3916_REG_WUP_TIMER_CONTROL_wur|ST25R3916_REG_WUP_TIMER_CONTROL_wto);
-/*		LOG_INF("st25r3916Initialize4");*/
     st25r3916EnableInterrupts( ST25R3916_IRQ_MASK_WT );
-
-
     st25r3916ExecuteCommand( ST25R3916_CMD_START_WUP_TIMER );
-/*		LOG_INF("st25r3916Initialize5");*/
     if(st25r3916WaitForInterruptsTimed(ST25R3916_IRQ_MASK_WT, ST25R3916_TEST_WU_TOUT) == 0U )
     {
         platformErrorHandle();
-        return ERR_TIMEOUT;
+        return RFAL_ERR_TIMEOUT;
     }
-/*	LOG_INF("st25r3916Initialize6");*/
-
     st25r3916DisableInterrupts( ST25R3916_IRQ_MASK_WT );
     st25r3916WriteRegister( ST25R3916_REG_WUP_TIMER_CONTROL, 0U );
     /*******************************************************************************/
 #endif /* ST25R_SELFTEST */
-	
 
     /* Enable Oscillator and wait until it gets stable */
     ret = st25r3916OscOn();
-    if( ret != ERR_NONE )
+    if( ret != RFAL_ERR_NONE )
     {
         platformErrorHandle();
         return ret;
     }
+
+
+#ifdef ST25R3916B
+    /* Trigger RC calibration */
+    st25r3916ExecuteCommandAndGetResult( ST25R3916_CMD_RC_CAL,  ST25R3916_REG_AWS_RC_CAL, ST25R3916_TOUT_CALIBRATE_AWS_RC, NULL );
+#endif /* ST25R3916B */
+
 
     /* Measure VDD and set sup3V bit according to Power supplied  */
     vdd_mV = st25r3916MeasureVoltage( ST25R3916_REG_REGULATOR_CONTROL_mpsv_vdd );
@@ -245,7 +228,7 @@ ReturnCode st25r3916Initialize( void )
     if( st25r3916WaitForInterruptsTimed( ST25R3916_IRQ_MASK_GPE, (ST25R3916_TEST_TMR_TOUT - ST25R3916_TEST_TMR_TOUT_DELTA)) != 0U )
     {
         platformErrorHandle();
-        return ERR_SYSTEM;
+        return RFAL_ERR_SYSTEM;
     }
     
     /* Stop all activities to stop the GP timer */
@@ -255,7 +238,7 @@ ReturnCode st25r3916Initialize( void )
     if(st25r3916WaitForInterruptsTimed( ST25R3916_IRQ_MASK_GPE, (ST25R3916_TEST_TMR_TOUT + ST25R3916_TEST_TMR_TOUT_DELTA)) == 0U )
     {
         platformErrorHandle();
-        return ERR_SYSTEM;
+        return RFAL_ERR_SYSTEM;
     }
     
     /* Stop all activities to stop the GP timer */
@@ -270,7 +253,7 @@ ReturnCode st25r3916Initialize( void )
     /* And clear them, just to be sure */
     st25r3916ClearInterrupts();
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -293,11 +276,11 @@ ReturnCode st25r3916OscOn( void )
     /* Use ST25R3916_REG_OP_CONTROL_en instead of ST25R3916_REG_AUX_DISPLAY_osc_ok to be on the safe side */
     if( !st25r3916CheckReg( ST25R3916_REG_OP_CONTROL, ST25R3916_REG_OP_CONTROL_en, ST25R3916_REG_OP_CONTROL_en ) )
     {
-        /* Clear any eventual previous oscillator IRQ */
+        /* Clear any eventual previous oscillator frequency stable IRQ and enable it */
+        st25r3916ClearAndEnableInterrupts( ST25R3916_IRQ_MASK_OSC );
+        
+        /* Clear any oscillator IRQ that was potentially pending on ST25R */
         st25r3916GetInterrupt( ST25R3916_IRQ_MASK_OSC );
-
-        /* Enable oscillator frequency stable interrupt */
-        st25r3916EnableInterrupts( ST25R3916_IRQ_MASK_OSC );
 
         /* Enable oscillator and regulator output */
         st25r3916SetRegisterBits( ST25R3916_REG_OP_CONTROL, ST25R3916_REG_OP_CONTROL_en );
@@ -309,10 +292,32 @@ ReturnCode st25r3916OscOn( void )
     
     if( !st25r3916CheckReg( ST25R3916_REG_AUX_DISPLAY, ST25R3916_REG_AUX_DISPLAY_osc_ok, ST25R3916_REG_AUX_DISPLAY_osc_ok ) )
     {
-        return ERR_SYSTEM;
+        return RFAL_ERR_SYSTEM;
     }
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
+}
+
+/*******************************************************************************/
+ReturnCode st25r3916ExecuteCommandAndGetResult( uint8_t cmd, uint8_t resReg, uint8_t tOut, uint8_t* result )
+{
+    /* Clear and enable Direct Command interrupt */
+    st25r3916GetInterrupt( ST25R3916_IRQ_MASK_DCT );
+    st25r3916EnableInterrupts( ST25R3916_IRQ_MASK_DCT );
+
+    st25r3916ExecuteCommand( cmd );
+
+    st25r3916WaitForInterruptsTimed( ST25R3916_IRQ_MASK_DCT, tOut );
+    st25r3916DisableInterrupts( ST25R3916_IRQ_MASK_DCT );
+
+    /* After execution read out the result if the pointer is not NULL */
+    if( result != NULL )
+    {
+        st25r3916ReadRegister( resReg, result);
+    }
+
+    return RFAL_ERR_NONE;
+
 }
 
 
@@ -376,7 +381,7 @@ ReturnCode st25r3916AdjustRegulators( uint16_t* result_mV )
         
         *result_mV += (uint16_t)result * 100U;           /* 100mV steps in both 3.3V and 5V supply                */
     }
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -397,13 +402,20 @@ ReturnCode st25r3916MeasurePhase( uint8_t* result )
 /*******************************************************************************/
 ReturnCode st25r3916MeasureCapacitance( uint8_t* result )
 {
+#ifdef ST25R3916B
+    return RFAL_ERR_NOTSUPP;
+#else
     return st25r3916ExecuteCommandAndGetResult( ST25R3916_CMD_MEASURE_CAPACITANCE, ST25R3916_REG_AD_RESULT, ST25R3916_TOUT_MEASURE_CAPACITANCE, result );
+#endif /* ST25R3916B */
 }
 
 
 /*******************************************************************************/
 ReturnCode st25r3916CalibrateCapacitiveSensor( uint8_t* result )
 {
+#ifdef ST25R3916B
+    return RFAL_ERR_NOTSUPP;
+#else
     ReturnCode ret;
     uint8_t    res;
     
@@ -415,9 +427,9 @@ ReturnCode st25r3916CalibrateCapacitiveSensor( uint8_t* result )
     
     /* Check wether the calibration was successull */
     if( ((res & ST25R3916_REG_CAP_SENSOR_RESULT_cs_cal_end) != ST25R3916_REG_CAP_SENSOR_RESULT_cs_cal_end) ||
-        ((res & ST25R3916_REG_CAP_SENSOR_RESULT_cs_cal_err) == ST25R3916_REG_CAP_SENSOR_RESULT_cs_cal_err) || (ret != ERR_NONE) )
+        ((res & ST25R3916_REG_CAP_SENSOR_RESULT_cs_cal_err) == ST25R3916_REG_CAP_SENSOR_RESULT_cs_cal_err) || (ret != RFAL_ERR_NONE) )
     {
-        return ERR_IO;
+        return RFAL_ERR_IO;
     }
     
     if( result != NULL )
@@ -425,7 +437,8 @@ ReturnCode st25r3916CalibrateCapacitiveSensor( uint8_t* result )
         (*result) = (uint8_t)(res >> ST25R3916_REG_CAP_SENSOR_RESULT_cs_cal_shift);
     }
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
+#endif /* ST25R3916B */    
 }
 
 
@@ -439,7 +452,7 @@ ReturnCode st25r3916SetBitrate(uint8_t txrate, uint8_t rxrate)
     {
         if(rxrate > ST25R3916_BR_848)
         {
-            return ERR_PARAM;
+            return RFAL_ERR_PARAM;
         }
 
         reg = (uint8_t)(reg & ~ST25R3916_REG_BIT_RATE_rxrate_mask);     /* MISRA 10.3 */
@@ -449,7 +462,7 @@ ReturnCode st25r3916SetBitrate(uint8_t txrate, uint8_t rxrate)
     {
         if(txrate > ST25R3916_BR_6780)
         {
-            return ERR_PARAM;
+            return RFAL_ERR_PARAM;
         }
         
         reg = (uint8_t)(reg & ~ST25R3916_REG_BIT_RATE_txrate_mask);     /* MISRA 10.3 */
@@ -469,10 +482,10 @@ ReturnCode st25r3916PerformCollisionAvoidance( uint8_t FieldONCmd, uint8_t pdThr
     
     if( (FieldONCmd != ST25R3916_CMD_INITIAL_RF_COLLISION) && (FieldONCmd != ST25R3916_CMD_RESPONSE_RF_COLLISION_N) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
-    err = ERR_INTERNAL;
+    err = RFAL_ERR_INTERNAL;
     
     
     /* Check if new thresholds are to be applied */
@@ -511,7 +524,7 @@ ReturnCode st25r3916PerformCollisionAvoidance( uint8_t FieldONCmd, uint8_t pdThr
    
     if( (ST25R3916_IRQ_MASK_CAC & irqs) != 0U )        /* Collision occurred */
     {        
-        err = ERR_RF_COLLISION;
+        err = RFAL_ERR_RF_COLLISION;
     }
     else if( (ST25R3916_IRQ_MASK_APON & irqs) != 0U )
     {
@@ -520,7 +533,7 @@ ReturnCode st25r3916PerformCollisionAvoidance( uint8_t FieldONCmd, uint8_t pdThr
                 
         if( (ST25R3916_IRQ_MASK_CAT & irqs) != 0U )                             /* No Collision detected, Field On */
         {
-            err = ERR_NONE;
+            err = RFAL_ERR_NONE;
         }
     }
     else
@@ -588,7 +601,7 @@ ReturnCode st25r3916SetNoResponseTime( uint32_t nrt_64fcs )
     uint32_t   tmpNRT;
 
     tmpNRT = nrt_64fcs;       /* MISRA 17.8 */
-    err    = ERR_NONE;
+    err    = RFAL_ERR_NONE;
     
     gST25R3916NRT_64fcs = tmpNRT;                                      /* Store given NRT value in 64/fc into local var       */
     nrt_step = ST25R3916_REG_TIMER_EMV_CONTROL_nrt_step_64fc;          /* Set default NRT in steps of 64/fc                   */
@@ -602,7 +615,7 @@ ReturnCode st25r3916SetNoResponseTime( uint32_t nrt_64fcs )
         if( tmpNRT > ST25R3916_NRT_MAX )                               /* Check if the NRT value fits using 64/fc steps       */
         {
             tmpNRT = ST25R3916_NRT_MAX;                                /* Assign the maximum possible                         */
-            err = ERR_PARAM;                                           /* Signal parameter error                              */
+            err = RFAL_ERR_PARAM;                                           /* Signal parameter error                              */
         }
         gST25R3916NRT_64fcs = (64U * tmpNRT);
     }
@@ -622,7 +635,7 @@ ReturnCode st25r3916SetStartNoResponseTimer( uint32_t nrt_64fcs )
     ReturnCode err;
     
     err = st25r3916SetNoResponseTime( nrt_64fcs );
-    if(err == ERR_NONE)
+    if(err == RFAL_ERR_NONE)
     {
         st25r3916ExecuteCommand( ST25R3916_CMD_START_NO_RESPONSE_TIMER );
     }
@@ -651,7 +664,7 @@ ReturnCode st25r3916SetStartGPTimer( uint16_t gpt_8fcs, uint8_t trigger_source )
         st25r3916ExecuteCommand( ST25R3916_CMD_START_GP_TIMER );
     }
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -660,14 +673,23 @@ bool st25r3916CheckChipID( uint8_t *rev )
 {
     uint8_t ID;
     
-    ID = 0;    
+    ID = 0;
     st25r3916ReadRegister( ST25R3916_REG_IC_IDENTITY, &ID );
     
     /* Check if IC Identity Register contains ST25R3916's IC type code */
+#if defined(ST25R3916)
     if( (ID & ST25R3916_REG_IC_IDENTITY_ic_type_mask) != ST25R3916_REG_IC_IDENTITY_ic_type_st25r3916 )
     {
         return false;
     }
+#elif defined(ST25R3916B)
+    if( ( (ID & ST25R3916_REG_IC_IDENTITY_ic_type_mask) != ST25R3916_REG_IC_IDENTITY_ic_type_st25r3916B ) || 
+        ( (ID & ST25R3916_REG_IC_IDENTITY_ic_rev_mask) < 1U )                                                 )
+    {
+        return false;
+    }
+#endif /* ST25R3916 */
+    
         
     if(rev != NULL)
     {
@@ -685,7 +707,7 @@ ReturnCode st25r3916GetRegsDump( t_st25r3916Regs* regDump )
     
     if(regDump == NULL)
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     /* Dump Registers on space A */
@@ -709,23 +731,41 @@ ReturnCode st25r3916GetRegsDump( t_st25r3916Regs* regDump )
     st25r3916ReadRegister( ST25R3916_REG_RES_AM_MOD,        &regDump->RsB[regIt++] );
     st25r3916ReadRegister( ST25R3916_REG_TX_DRIVER_STATUS,  &regDump->RsB[regIt++] );
     st25r3916ReadRegister( ST25R3916_REG_REGULATOR_RESULT,  &regDump->RsB[regIt++] );
+    
+#ifdef ST25R3916B
+    st25r3916ReadRegister( ST25R3916_REG_AWS_CONF1,  &regDump->RsB[regIt++] );
+    st25r3916ReadRegister( ST25R3916_REG_AWS_CONF2,  &regDump->RsB[regIt++] );
+#endif /* ST25R3916B */
+
     st25r3916ReadRegister( ST25R3916_REG_OVERSHOOT_CONF1,   &regDump->RsB[regIt++] );
     st25r3916ReadRegister( ST25R3916_REG_OVERSHOOT_CONF2,   &regDump->RsB[regIt++] );
     st25r3916ReadRegister( ST25R3916_REG_UNDERSHOOT_CONF1,  &regDump->RsB[regIt++] );
     st25r3916ReadRegister( ST25R3916_REG_UNDERSHOOT_CONF2,  &regDump->RsB[regIt++] );
 
-    return ERR_NONE;
+#ifdef ST25R3916B
+    st25r3916ReadRegister( ST25R3916_REG_AWS_TIME1,   &regDump->RsB[regIt++] );
+    st25r3916ReadRegister( ST25R3916_REG_AWS_TIME2,   &regDump->RsB[regIt++] );
+    st25r3916ReadRegister( ST25R3916_REG_AWS_TIME3,   &regDump->RsB[regIt++] );
+    st25r3916ReadRegister( ST25R3916_REG_AWS_TIME4,   &regDump->RsB[regIt++] );
+    st25r3916ReadRegister( ST25R3916_REG_AWS_TIME5,   &regDump->RsB[regIt++] );
+    st25r3916ReadRegister( ST25R3916_REG_AWS_RC_CAL,  &regDump->RsB[regIt++] );
+#endif /* ST25R3916B */
+
+    return RFAL_ERR_NONE;
 }
 
 
 /*******************************************************************************/
 bool st25r3916IsCmdValid( uint8_t cmd )
 {
-    if( !((cmd >= ST25R3916_CMD_SET_DEFAULT)             && (cmd <= ST25R3916_CMD_RESPONSE_RF_COLLISION_N))   && 
-        !((cmd >= ST25R3916_CMD_GOTO_SENSE)              && (cmd <= ST25R3916_CMD_GOTO_SLEEP))                &&
-        !((cmd >= ST25R3916_CMD_MASK_RECEIVE_DATA)       && (cmd <= ST25R3916_CMD_MEASURE_AMPLITUDE))         &&
-        !((cmd >= ST25R3916_CMD_RESET_RXGAIN)            && (cmd <= ST25R3916_CMD_ADJUST_REGULATORS))         &&
-        !((cmd >= ST25R3916_CMD_CALIBRATE_DRIVER_TIMING) && (cmd <= ST25R3916_CMD_START_PPON2_TIMER))         &&
+    if( (!((cmd >= ST25R3916_CMD_SET_DEFAULT)             && (cmd <= ST25R3916_CMD_RESPONSE_RF_COLLISION_N)))   &&
+        (!((cmd >= ST25R3916_CMD_GOTO_SENSE)              && (cmd <= ST25R3916_CMD_GOTO_SLEEP)))                &&
+        (!((cmd >= ST25R3916_CMD_MASK_RECEIVE_DATA)       && (cmd <= ST25R3916_CMD_MEASURE_AMPLITUDE)))         &&
+        (!((cmd >= ST25R3916_CMD_RESET_RXGAIN)            && (cmd <= ST25R3916_CMD_ADJUST_REGULATORS)))         &&
+        (!((cmd >= ST25R3916_CMD_CALIBRATE_DRIVER_TIMING) && (cmd <= ST25R3916_CMD_START_PPON2_TIMER)))         &&
+    #ifdef ST25R3916B
+        (cmd != ST25R3916_CMD_RC_CAL)                                                                           &&
+    #endif /* ST25R3916B */
          (cmd != ST25R3916_CMD_SPACE_B_ACCESS)           && (cmd != ST25R3916_CMD_STOP_NRT)                      )
     {
         return false;
@@ -747,7 +787,7 @@ ReturnCode st25r3916StreamConfigure(const struct st25r3916StreamConfig *config)
         mode = ST25R3916_REG_MODE_om_bpsk_stream;
         if( (config->din<2U) || (config->din>4U) ) /* not in fc/4 .. fc/16 */
         {
-            return ERR_PARAM;
+            return RFAL_ERR_PARAM;
         }
         smd |= ((4U - config->din) << ST25R3916_REG_STREAM_MODE_scf_shift);
     }
@@ -756,31 +796,31 @@ ReturnCode st25r3916StreamConfigure(const struct st25r3916StreamConfig *config)
         mode = ST25R3916_REG_MODE_om_subcarrier_stream;
         if( (config->din<3U) || (config->din>6U) ) /* not in fc/8 .. fc/64 */
         {
-            return ERR_PARAM;
+            return RFAL_ERR_PARAM;
         }
         smd |= ((6U - config->din) << ST25R3916_REG_STREAM_MODE_scf_shift);
         if( config->report_period_length == 0U )
         {
-            return ERR_PARAM;
+            return RFAL_ERR_PARAM;
         }
     }
 
     if( (config->dout<1U) || (config->dout>7U) ) /* not in fc/2 .. fc/128 */
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     smd |= (7U - config->dout) << ST25R3916_REG_STREAM_MODE_stx_shift;
 
     if( config->report_period_length > 3U )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     smd |= (config->report_period_length << ST25R3916_REG_STREAM_MODE_scp_shift);
 
     st25r3916WriteRegister(ST25R3916_REG_STREAM_MODE, smd);
     st25r3916ChangeRegisterBits(ST25R3916_REG_MODE, ST25R3916_REG_MODE_om_mask, mode);
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -790,10 +830,10 @@ ReturnCode st25r3916GetRSSI( uint16_t *amRssi, uint16_t *pmRssi )
     /*******************************************************************************/
     /* MISRA 8.9 An object should be defined at block scope if its identifier only appears in a single function */
     /*< ST25R3916  RSSI Display Reg values:      0   1   2   3   4   5   6    7    8   9    a     b    c    d  e  f */
-    static const uint16_t st25r3916Rssi2mV[] = { 0 ,20 ,27 ,37 ,52 ,72 ,99 ,136 ,190 ,262 ,357 ,500 ,686 ,950, 1150, 1150 };
+    static const uint16_t st25r3916Rssi2mV[16] = { 0 ,20 ,27 ,37 ,52 ,72 ,99 ,136 ,190 ,262 ,357 ,500 ,686 ,950, 1150, 1150 };
 
     /* ST25R3916 2/3 stage gain reduction [dB]          0    0    0    0    0    3    6    9   12   15   18  na na na na na */
-    static const uint16_t st25r3916Gain2Percent[] = { 100, 100, 100, 100, 100, 141, 200, 281, 398, 562, 794, 1, 1, 1, 1, 1 };
+    static const uint16_t st25r3916Gain2Percent[16] = { 100, 100, 100, 100, 100, 141, 200, 281, 398, 562, 794, 1, 1, 1, 1, 1 };
     /*******************************************************************************/
 
     uint8_t  rssi;
@@ -812,5 +852,19 @@ ReturnCode st25r3916GetRSSI( uint16_t *amRssi, uint16_t *pmRssi )
         *pmRssi = (uint16_t) ( ( (uint32_t)st25r3916Rssi2mV[ (rssi & ST25R3916_REG_RSSI_RESULT_rssi_pm_mask) ] * (uint32_t)st25r3916Gain2Percent[ (gainRed & ST25R3916_REG_GAIN_RED_STATE_gs_pm_mask) ] ) / 100U );
     }
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
+}
+
+
+/*******************************************************************************/
+ReturnCode st25r3916SetAntennaMode( bool single, bool rfiox )
+{
+    uint8_t val;
+    
+    val  = 0U;
+    val |= ((single)? ST25R3916_REG_IO_CONF1_single : 0U);
+    val |= ((rfiox) ? ST25R3916_REG_IO_CONF1_rfo2   : 0U);
+    
+    st25r3916ChangeRegisterBits( ST25R3916_REG_IO_CONF1, (ST25R3916_REG_IO_CONF1_single | ST25R3916_REG_IO_CONF1_rfo2), val );
+    return RFAL_ERR_NONE;
 }

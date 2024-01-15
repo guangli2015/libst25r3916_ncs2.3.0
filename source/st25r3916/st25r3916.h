@@ -55,8 +55,8 @@
 * INCLUDES
 ******************************************************************************
 */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "st25r3916_com.h"
 
 /*
@@ -108,8 +108,10 @@ struct st25r3916StreamConfig {
 #define ST25R3916_CMD_CLEAR_RSSI               0xDAU    /*!< Clear RSSI bits and restart the measurement             */
 #define ST25R3916_CMD_CLEAR_FIFO               0xDBU    /*!< Clears FIFO, Collision and IRQ status                   */
 #define ST25R3916_CMD_TRANSPARENT_MODE         0xDCU    /*!< Transparent mode                                        */
+#ifdef ST25R3916
 #define ST25R3916_CMD_CALIBRATE_C_SENSOR       0xDDU    /*!< Calibrate the capacitive sensor                         */
 #define ST25R3916_CMD_MEASURE_CAPACITANCE      0xDEU    /*!< Measure capacitance                                     */
+#endif /* ST25R3916 */
 #define ST25R3916_CMD_MEASURE_VDD              0xDFU    /*!< Measure power supply voltage                            */
 #define ST25R3916_CMD_START_GP_TIMER           0xE0U    /*!< Start the general purpose timer                         */
 #define ST25R3916_CMD_START_WUP_TIMER          0xE1U    /*!< Start the wake-up timer                                 */
@@ -117,6 +119,9 @@ struct st25r3916StreamConfig {
 #define ST25R3916_CMD_START_NO_RESPONSE_TIMER  0xE3U    /*!< Start the no-response timer                             */
 #define ST25R3916_CMD_START_PPON2_TIMER        0xE4U    /*!< Start PPon2 timer                                       */
 #define ST25R3916_CMD_STOP_NRT                 0xE8U    /*!< Stop No Response Timer                                  */
+#ifdef ST25R3916B
+#define ST25R3916_CMD_RC_CAL                   0xEAU    /*!< Trigger RC calibration                                  */
+#endif /* ST25R3916B */
 #define ST25R3916_CMD_SPACE_B_ACCESS           0xFBU    /*!< Enable R/W access to the test registers                 */
 #define ST25R3916_CMD_TEST_ACCESS              0xFCU    /*!< Enable R/W access to the test registers                 */
 
@@ -183,11 +188,11 @@ struct st25r3916StreamConfig {
  *
  *  This function initialises the ST25R3916 driver.
  *
- *  \return ERR_NONE         : Operation successful
- *  \return ERR_HW_MISMATCH  : Expected HW do not match or communication error
- *  \return ERR_IO           : Error during communication selftest. Check communication interface
- *  \return ERR_TIMEOUT      : Timeout during IRQ selftest. Check IRQ handling
- *  \return ERR_SYSTEM       : Failure during oscillator activation or timer error 
+ *  \return RFAL_ERR_NONE         : Operation successful
+ *  \return RFAL_ERR_HW_MISMATCH  : Expected HW do not match or communication error
+ *  \return RFAL_ERR_IO           : Error during communication selftest. Check communication interface
+ *  \return RFAL_ERR_TIMEOUT      : Timeout during IRQ selftest. Check IRQ handling
+ *  \return RFAL_ERR_SYSTEM       : Failure during oscillator activation or timer error 
  *
  *****************************************************************************
  */
@@ -210,8 +215,8 @@ void st25r3916Deinitialize( void );
  *  This function turn on oscillator and regulator and waits for the 
  *  oscillator to become stable
  * 
- *  \return ERR_SYSTEM : Failure dusring Oscillator activation
- *  \return ERR_NONE   : No error, Oscillator is active and stable, Regulator is on
+ *  \return RFAL_ERR_SYSTEM : Failure dusring Oscillator activation
+ *  \return RFAL_ERR_NONE   : No error, Oscillator is active and stable, Regulator is on
  *
  *****************************************************************************
  */
@@ -228,8 +233,8 @@ ReturnCode st25r3916OscOn( void );
  *  \param rxrate : speed is 2^rxrate * 106 kb/s
  *                  0xff : don't set rxrate (ST25R3916_BR_DO_NOT_SET)
  *
- *  \return ERR_PARAM: At least one bit rate was invalid
- *  \return ERR_NONE : No error, both bit rates were set
+ *  \return RFAL_ERR_PARAM: At least one bit rate was invalid
+ *  \return RFAL_ERR_NONE : No error, both bit rates were set
  *
  *****************************************************************************
  */
@@ -247,8 +252,8 @@ ReturnCode st25r3916SetBitrate( uint8_t txrate, uint8_t rxrate );
  *  
  *  \param [out] result_mV : Result of calibration in milliVolts
  *
- *  \return ERR_IO : Error during communication with ST25R3916
- *  \return ERR_NONE : No error
+ *  \return RFAL_ERR_IO : Error during communication with ST25R3916
+ *  \return RFAL_ERR_NONE : No error
  *
  *****************************************************************************
  */
@@ -258,13 +263,13 @@ ReturnCode st25r3916AdjustRegulators( uint16_t* result_mV );
  *****************************************************************************
  *  \brief  Measure Amplitude
  *
- *  This function measured the amplitude on the RFI inputs and stores the
+ *  This function measures the amplitude on the RFI inputs and stores the
  *  result in parameter \a result.
  *
  *  \param[out] result:  result of RF measurement.
  *
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_NONE  : No error
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_NONE  : No error
  *  
  *****************************************************************************
  */
@@ -316,8 +321,8 @@ uint16_t st25r3916MeasureVoltage( uint8_t mpsv );
  *
  *  \param[out] result: 8 bit long result of the measurement.
  *
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_NONE  : No error
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_NONE  : No error
  *  
  *****************************************************************************
  */
@@ -333,8 +338,8 @@ ReturnCode st25r3916MeasurePhase( uint8_t* result );
  *
  *  \param[out] result: 8 bit long result of RF measurement.
  *
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_NONE  : No error
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_NONE  : No error
  *  
  *****************************************************************************
  */
@@ -356,9 +361,9 @@ ReturnCode st25r3916MeasureCapacitance( uint8_t* result );
  *  \param[out] result: 5 bit long result of the calibration.
  *                      Binary weighted, step 0.1 pF, max 3.1 pF
  *
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_IO    : The calibration was not successful 
- *  \return ERR_NONE  : No error
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_IO    : The calibration was not successful 
+ *  \return RFAL_ERR_NONE  : No error
  *  
  *****************************************************************************
  */
@@ -385,8 +390,8 @@ uint32_t st25r3916GetNoResponseTime( void );
  *
  *  \param [in] nrt_64fcs : no response time in steps of 64/fc (4.72us)
  *
- *  \return ERR_PARAM : Invalid parameter (time is too large)
- *  \return ERR_NONE  : No error
+ *  \return RFAL_ERR_PARAM : Invalid parameter (time is too large)
+ *  \return RFAL_ERR_NONE  : No error
  *
  *****************************************************************************  
  */
@@ -402,8 +407,8 @@ ReturnCode st25r3916SetNoResponseTime( uint32_t nrt_64fcs );
  *
  *  \param [in] nrt_64fcs : no response time in steps of 64/fc (4.72us)
  *
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_NONE  : No error
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_NONE  : No error
  *
  *****************************************************************************  
  */
@@ -431,8 +436,8 @@ void st25r3916SetGPTime( uint16_t gpt_8fcs );
  *  \param [in] gpt_8fcs : general purpose timer timeout in  steps of8/fc (590ns)
  *  \param [in] trigger_source : no trigger, start of Rx, end of Rx, end of Tx in NFC mode
  *   
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_NONE  : No error 
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_NONE  : No error 
  *  
  *****************************************************************************
  */
@@ -491,9 +496,9 @@ uint8_t st25r3916GetNumFIFOLastBits( void );
  *                           0xff : don't set Threshold (ST25R3916_THRESHOLD_DO_NOT_SET)
  *  \param[in] nTRFW       : Number of TRFW
  *
- *  \return ERR_PARAM        : Invalid parameter 
- *  \return ERR_RF_COLLISION : Collision detected
- *  \return ERR_NONE         : No collision detected
+ *  \return RFAL_ERR_PARAM        : Invalid parameter 
+ *  \return RFAL_ERR_RF_COLLISION : Collision detected
+ *  \return RFAL_ERR_NONE         : No collision detected
  *  
  *****************************************************************************
  */
@@ -522,8 +527,8 @@ bool st25r3916CheckChipID( uint8_t *rev );
  *  \param[out] regDump : pointer to the struct/buffer where the reg dump
  *                        will be written
  *  
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_NONE  : No error
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_NONE  : No error
  *****************************************************************************
  */
 ReturnCode st25r3916GetRegsDump( t_st25r3916Regs* regDump );
@@ -551,8 +556,8 @@ bool st25r3916IsCmdValid( uint8_t cmd );
  *
  *  \param[in] config : all settings for bitrates, type, etc.
  *
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_NONE  : No error, stream mode driver initialized
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_NONE  : No error, stream mode driver initialized
  *
  *****************************************************************************
  */
@@ -571,7 +576,7 @@ ReturnCode st25r3916StreamConfigure( const struct st25r3916StreamConfig *config 
  *  \param[in]  tOut  : time in milliseconds to wait before reading the result
  *  \param[out] result: result
  *
- *  \return ERR_NONE  : No error
+ *  \return RFAL_ERR_NONE  : No error
  *  
  *****************************************************************************
  */
@@ -588,12 +593,31 @@ ReturnCode st25r3916ExecuteCommandAndGetResult( uint8_t cmd, uint8_t resReg, uin
  *  \param[out] amRssi: the RSSI on the AM channel expressed in mV 
  *  \param[out] pmRssi: the RSSI on the PM channel expressed in mV 
  *  
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_NONE  : No error
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_NONE  : No error
  *  
  *****************************************************************************
  */
 ReturnCode st25r3916GetRSSI( uint16_t *amRssi, uint16_t *pmRssi );
+
+
+/*! 
+ *****************************************************************************
+ * \brief  Set Antenna mode
+ *
+ * Sets the antenna mode. 
+ * Differential or single ended antenna mode (RFO1 or RFO2)
+ *
+ *  \param[in]    single:  FALSE differential ; single ended mode
+ *  \param[in]     rfiox:  FALSE   RFI1/RFO1  ; TRUE   RFI2/RFO2
+ *
+ * \return  RFAL_ERR_IO      : Internal error
+ * \return  RFAL_ERR_NOTSUPP : Feature not supported
+ * \return  RFAL_ERR_NONE    : No error
+ *****************************************************************************
+ */
+ReturnCode st25r3916SetAntennaMode( bool single, bool rfiox );
+
 #endif /* ST25R3916_H */
 
 /**

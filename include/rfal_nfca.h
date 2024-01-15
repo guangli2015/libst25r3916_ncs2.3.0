@@ -60,8 +60,8 @@
  * INCLUDES
  ******************************************************************************
  */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_rf.h"
 #include "rfal_t1t.h"
 
@@ -200,8 +200,8 @@ typedef struct
  * to 106 kbps
  
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerInitialize( void );
@@ -217,16 +217,16 @@ ReturnCode rfalNfcaPollerInitialize( void );
  * \param[in]  cmd     : Indicate if to send an ALL_REQ or a SENS_REQ
  * \param[out] sensRes : If received, the SENS_RES
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error 
- * \return ERR_RF_COLLISION : Collision detected one or more device in the field
- * \return ERR_PAR          : Parity error detected, one or more device in the field
- * \return ERR_CRC          : CRC error detected, one or more device in the field
- * \return ERR_FRAMING      : Framing error detected, one or more device in the field
- * \return ERR_PROTO        : Protocol error detected, one or more device in the field
- * \return ERR_TIMEOUT      : Timeout error, no listener device detected
- * \return ERR_NONE         : No error, one or more device in the field
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error 
+ * \return RFAL_ERR_RF_COLLISION : Collision detected one or more device in the field
+ * \return RFAL_ERR_PAR          : Parity error detected, one or more device in the field
+ * \return RFAL_ERR_CRC          : CRC error detected, one or more device in the field
+ * \return RFAL_ERR_FRAMING      : Framing error detected, one or more device in the field
+ * \return RFAL_ERR_PROTO        : Protocol error detected, one or more device in the field
+ * \return RFAL_ERR_TIMEOUT      : Timeout error, no listener device detected
+ * \return RFAL_ERR_NONE         : No error, one or more device in the field
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerCheckPresence( rfal14443AShortFrameCmd cmd, rfalNfcaSensRes *sensRes );
@@ -242,18 +242,63 @@ ReturnCode rfalNfcaPollerCheckPresence( rfal14443AShortFrameCmd cmd, rfalNfcaSen
  * \param[in]  nfcidLen : Length of the NFCID1 to be selected  
  * \param[out] selRes   : pointer to place the SEL_RES
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_TIMEOUT      : Timeout error
- * \return ERR_PAR          : Parity error detected
- * \return ERR_CRC          : CRC error detected
- * \return ERR_FRAMING      : Framing error detected
- * \return ERR_PROTO        : Protocol error detected
- * \return ERR_NONE         : No error, SEL_RES received
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error
+ * \return RFAL_ERR_PAR          : Parity error detected
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error, SEL_RES received
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerSelect( const uint8_t *nfcid1, uint8_t nfcidLen, rfalNfcaSelRes *selRes );
+
+
+/*! 
+ *****************************************************************************
+ * \brief  NFC-A Poller Start Select
+ *  
+ * This method starts the selection of a NFC-A Listener device (PICC) 
+ *  
+ * \param[in]  nfcid1   : Listener device NFCID1 to be selected
+ * \param[in]  nfcidLen : Length of the NFCID1 to be selected  
+ * \param[out] selRes   : pointer to place the SEL_RES
+ *
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error
+ * \return RFAL_ERR_PAR          : Parity error detected
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error, SEL_RES received
+ *****************************************************************************
+ */
+ReturnCode rfalNfcaPollerStartSelect( const uint8_t *nfcid1, uint8_t nfcidLen, rfalNfcaSelRes *selRes );
+
+
+/*! 
+ *****************************************************************************
+ * \brief  NFC-A Poller Get Select Status
+ *  
+ * This method gets the selection status
+ *  
+ *
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_TIMEOUT      : Timeout error
+ * \return RFAL_ERR_PAR          : Parity error detected
+ * \return RFAL_ERR_CRC          : CRC error detected
+ * \return RFAL_ERR_FRAMING      : Framing error detected
+ * \return RFAL_ERR_PROTO        : Protocol error detected
+ * \return RFAL_ERR_NONE         : No error, SEL_RES received
+ *****************************************************************************
+ */
+ReturnCode rfalNfcaPollerGetSelectStatus( void );
 
 
 /*! 
@@ -263,13 +308,44 @@ ReturnCode rfalNfcaPollerSelect( const uint8_t *nfcid1, uint8_t nfcidLen, rfalNf
  * This method sends a SLP_REQ (HLTA)
  * No response is expected afterwards   Digital 1.1  6.9.2.1 
  *  
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerSleep( void );
+
+
+/*!
+ *****************************************************************************
+ * \brief  NFC-A Poller Start Sleep
+ *  
+ * This method sends a SLP_REQ (HLTA)
+ * No response is expected afterwards   Digital 1.1  6.9.2.1 
+ *  
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error
+ *****************************************************************************
+ */
+ReturnCode rfalNfcaPollerStartSleep( void );
+
+
+/*! 
+ *****************************************************************************
+ * \brief  NFC-A Poller Get Sleep Status
+ *  
+ *  Returns the Sleep status
+ *  
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error
+ *****************************************************************************
+ */
+ReturnCode rfalNfcaPollerGetSleepStatus( void );
 
 
 /*!
@@ -286,13 +362,51 @@ ReturnCode rfalNfcaPollerSleep( void );
  * after detection. When set to EMV a ALL_REQ (WUPA) is sent instead of 
  * a SENS_REQ (REQA)
  *  
- * \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_NONE         : No error, one or more device in the field
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error, one or more device in the field
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerTechnologyDetection( rfalComplianceMode compMode, rfalNfcaSensRes *sensRes );
+
+
+/*! 
+ *****************************************************************************
+ * \brief  NFC-A Start Technology Detection
+ *  
+ * This method starts NFC-A Technology Detection as defined in the spec
+ * given in the compliance mode
+ *  
+ * \param[in]  compMode  : compliance mode to be performed
+ * \param[out] sensRes   : location to store the SENS_RES, if received
+ * 
+ * When compMode is set to ISO compliance a SLP_REQ (HLTA) is not sent 
+ * after detection. When set to EMV a ALL_REQ (WUPA) is sent instead of 
+ * a SENS_REQ (REQA)
+ *  
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error, one or more device in the field
+ *****************************************************************************
+ */
+ReturnCode rfalNfcaPollerStartTechnologyDetection( rfalComplianceMode compMode, rfalNfcaSensRes *sensRes );
+
+
+/*!
+ *****************************************************************************
+ *  \brief  NFC-A Get Technology Detection Status
+ *
+ *  Returns the Technology Detection status
+ *
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error, one or more device in the field
+ *****************************************************************************
+ */
+ReturnCode rfalNfcaPollerGetTechnologyDetectionStatus( void );
 
 
 /*! 
@@ -314,12 +428,12 @@ ReturnCode rfalNfcaPollerTechnologyDetection( rfalComplianceMode compMode, rfalN
  * \param[out] nfcId1      : location to store the NFCID1 (UID), ensure RFAL_NFCA_CASCADE_3_UID_LEN
  * \param[out] nfcId1Len   : pointer to length of NFCID1 (UID)
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_PROTO        : Card length invalid
- * \return ERR_IGNORE       : conDevLimit is 0 and there is a collision
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_PROTO        : Card length invalid
+ * \return RFAL_ERR_IGNORE       : conDevLimit is 0 and there is a collision
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerSingleCollisionResolution( uint8_t devLimit, bool *collPending, rfalNfcaSelRes *selRes, uint8_t *nfcId1, uint8_t *nfcId1Len );
@@ -347,10 +461,10 @@ ReturnCode rfalNfcaPollerSingleCollisionResolution( uint8_t devLimit, bool *coll
  * with no collisions, it will properly resolved.
  *
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerFullCollisionResolution( rfalComplianceMode compMode, uint8_t devLimit, rfalNfcaListenDevice *nfcaDevList, uint8_t *devCnt );
@@ -372,16 +486,16 @@ ReturnCode rfalNfcaPollerFullCollisionResolution( rfalComplianceMode compMode, u
  * \param[out] devCnt      : Devices found counter
  *  
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerSleepFullCollisionResolution( uint8_t devLimit, rfalNfcaListenDevice *nfcaDevList, uint8_t *devCnt );
 
 
-/*! 
+/*!
  *****************************************************************************
  * \brief  NFC-A Poller Start Full Collision Resolution
  *  
@@ -404,10 +518,10 @@ ReturnCode rfalNfcaPollerSleepFullCollisionResolution( uint8_t devLimit, rfalNfc
  * with no collisions, it will properly resolved.
  *
  *
- * \return ERR_WRONG_STATE  : RFAL not initialized or mode not set
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_IO           : Generic internal error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or mode not set
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerStartFullCollisionResolution( rfalComplianceMode compMode, uint8_t devLimit, rfalNfcaListenDevice *nfcaDevList, uint8_t *devCnt );
@@ -419,16 +533,16 @@ ReturnCode rfalNfcaPollerStartFullCollisionResolution( rfalComplianceMode compMo
  *
  *  Returns the Collision Resolution status
  *
- *  \return ERR_BUSY         : Operation is ongoing
- *  \return ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
- *  \return ERR_PARAM        : Invalid parameters
- *  \return ERR_IO           : Generic internal error
- *  \return ERR_TIMEOUT      : Timeout error
- *  \return ERR_PAR          : Parity error detected
- *  \return ERR_CRC          : CRC error detected
- *  \return ERR_FRAMING      : Framing error detected
- *  \return ERR_PROTO        : Protocol error detected
- *  \return ERR_NONE         : No error, activation successful
+ *  \return RFAL_ERR_BUSY         : Operation is ongoing
+ *  \return RFAL_ERR_WRONG_STATE  : RFAL not initialized or incorrect mode
+ *  \return RFAL_ERR_PARAM        : Invalid parameters
+ *  \return RFAL_ERR_IO           : Generic internal error
+ *  \return RFAL_ERR_TIMEOUT      : Timeout error
+ *  \return RFAL_ERR_PAR          : Parity error detected
+ *  \return RFAL_ERR_CRC          : CRC error detected
+ *  \return RFAL_ERR_FRAMING      : Framing error detected
+ *  \return RFAL_ERR_PROTO        : Protocol error detected
+ *  \return RFAL_ERR_NONE         : No error, activation successful
  *****************************************************************************
  */
 ReturnCode rfalNfcaPollerGetFullCollisionResolutionStatus( void );
@@ -447,6 +561,7 @@ ReturnCode rfalNfcaPollerGetFullCollisionResolutionStatus( void );
  *****************************************************************************
  */
 bool rfalNfcaListenerIsSleepReq( const uint8_t *buf, uint16_t bufLen );
+
 
 #endif /* RFAL_NFCA_H */
 

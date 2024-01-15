@@ -43,7 +43,7 @@ extern "C" {
 #endif
 
 /* Includes ------------------------------------------------------------------*/
-#include "platform.h"
+#include "rfal_platform.h"
 #include "st_errno.h"
 
 /* Exported types ------------------------------------------------------------*/

@@ -56,8 +56,8 @@
 * INCLUDES
 ******************************************************************************
 */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 
 /*
 ******************************************************************************
@@ -65,7 +65,11 @@
 ******************************************************************************
 */
 #define ST25R3916_SPACE_B                                   0x40U    /*!< ST25R3916 Space-B indicator                          */
+#ifdef ST25R3916B
+#define ST25R3916_SPACE_B_REG_LEN                           24U      /*!< Number of register in the space B                    */
+#else
 #define ST25R3916_SPACE_B_REG_LEN                           16U      /*!< Number of register in the space B                    */
+#endif /* ST25R3916B */
                                                                      
 #define ST25R3916_FIFO_STATUS_LEN                           2        /*!< Number of FIFO Status Register                       */
                                                                      
@@ -176,6 +180,18 @@
 #define ST25R3916_REG_UNDERSHOOT_CONF1   (ST25R3916_SPACE_B|0x32U)   /*!< RW  Undershoot Protection Configuration Register 1   */
 #define ST25R3916_REG_UNDERSHOOT_CONF2   (ST25R3916_SPACE_B|0x33U)   /*!< RW  Undershoot Protection Configuration Register 2   */
                                                                      
+#ifdef ST25R3916B
+/* AWS Configuration Registers */
+#define ST25R3916_REG_AWS_CONF1          (ST25R3916_SPACE_B|0x2EU)   /*!< RW  AWS Configuration Register 1                     */
+#define ST25R3916_REG_AWS_CONF2          (ST25R3916_SPACE_B|0x2FU)   /*!< RW  AWS Configuration Register 2                     */
+#define ST25R3916_REG_AWS_TIME1          (ST25R3916_SPACE_B|0x34U)   /*!< RW  AWS Time Register 1                              */
+#define ST25R3916_REG_AWS_TIME2          (ST25R3916_SPACE_B|0x35U)   /*!< RW  AWS Time Register 2                              */
+#define ST25R3916_REG_AWS_TIME3          (ST25R3916_SPACE_B|0x36U)   /*!< RW  AWS Time Register 1                              */
+#define ST25R3916_REG_AWS_TIME4          (ST25R3916_SPACE_B|0x37U)   /*!< RW  AWS Time Register 2                              */
+#define ST25R3916_REG_AWS_TIME5          (ST25R3916_SPACE_B|0x38U)   /*!< RW  AWS Time Register 1                              */
+#define ST25R3916_REG_AWS_RC_CAL         (ST25R3916_SPACE_B|0x39U)   /*!< RW  AWS Time Register 2                              */
+#endif /* ST25R3916B */
+                                                                     
 /* Detection of card presence */                                     
 #define ST25R3916_REG_WUP_TIMER_CONTROL                     0x32U    /*!< RW Wake-up Timer Control Register                    */
 #define ST25R3916_REG_AMPLITUDE_MEASURE_CONF                0x33U    /*!< RW Amplitude Measurement Configuration Register      */
@@ -186,16 +202,21 @@
 #define ST25R3916_REG_PHASE_MEASURE_REF                     0x38U    /*!< RW Phase Measurement Reference Register              */
 #define ST25R3916_REG_PHASE_MEASURE_AA_RESULT               0x39U    /*!< R  Phase Measurement Auto Averaging Display Register */
 #define ST25R3916_REG_PHASE_MEASURE_RESULT                  0x3AU    /*!< R  Phase Measurement Display Register                */
+
+#if defined(ST25R3916)
 #define ST25R3916_REG_CAPACITANCE_MEASURE_CONF              0x3BU    /*!< RW Capacitance Measurement Configuration Register    */
 #define ST25R3916_REG_CAPACITANCE_MEASURE_REF               0x3CU    /*!< RW Capacitance Measurement Reference Register        */
 #define ST25R3916_REG_CAPACITANCE_MEASURE_AA_RESULT         0x3DU    /*!< R  Capacitance Measurement Auto Averaging Display Reg*/
 #define ST25R3916_REG_CAPACITANCE_MEASURE_RESULT            0x3EU    /*!< R  Capacitance Measurement Display Register          */
+#elif defined(ST25R3916B)
+#define ST25R3916_REG_MEAS_TX_DELAY                         0x3BU    /*!< RW Capacitance Measurement Configuration Register    */
+#endif /* ST25R3916 */
                                                                      
 /* IC identity  */                                                   
 #define ST25R3916_REG_IC_IDENTITY                           0x3FU    /*!< R  Chip Id: 0 for old silicon, v2 silicon: 0x09      */
 
 
-/*! Register bit definitions  \cond DOXYGEN_SUPRESS */
+/*! Register bit definitions  \cond DOXYGEN_SUPPRESS */
 
 #define ST25R3916_REG_IO_CONF1_single                         (1U<<7)
 #define ST25R3916_REG_IO_CONF1_rfo2                           (1U<<6)
@@ -224,7 +245,12 @@
 #define ST25R3916_REG_IO_CONF2_miso_pd2                       (1U<<4)
 #define ST25R3916_REG_IO_CONF2_miso_pd1                       (1U<<3)
 #define ST25R3916_REG_IO_CONF2_io_drv_lvl                     (1U<<2)
+#if defined(ST25R3916)
 #define ST25R3916_REG_IO_CONF2_slow_up                        (1U<<0)
+#elif defined(ST25R3916B)
+#define ST25R3916_REG_IO_CONF2_act_amsink                     (1U<<0)
+#endif /* ST25R3916B */
+
 
 #define ST25R3916_REG_OP_CONTROL_en                           (1U<<7)
 #define ST25R3916_REG_OP_CONTROL_rx_en                        (1U<<6)
@@ -342,7 +368,11 @@
 #define ST25R3916_REG_ISO14443B_1_eof_11etu                   (1U<<2)
 #define ST25R3916_REG_ISO14443B_1_eof_10etu                   (0U<<2)
 #define ST25R3916_REG_ISO14443B_1_half                        (1U<<1)
+#if defined(ST25R3916)
 #define ST25R3916_REG_ISO14443B_1_rx_st_om                    (1U<<0)
+#elif defined(ST25R3916B)
+#define ST25R3916_REG_ISO14443B_1_rfu0                        (1U<<0)
+#endif /* ST25R3916B */
 
 #define ST25R3916_REG_ISO14443B_2_tr1_1                       (1U<<7)
 #define ST25R3916_REG_ISO14443B_2_tr1_0                       (1U<<6)
@@ -616,6 +646,7 @@
 #define ST25R3916_REG_TX_DRIVER_am_mod2                       (1U<<6)
 #define ST25R3916_REG_TX_DRIVER_am_mod1                       (1U<<5)
 #define ST25R3916_REG_TX_DRIVER_am_mod0                       (1U<<4)
+#if defined(ST25R3916)
 #define ST25R3916_REG_TX_DRIVER_am_mod_5percent               (0x0U<<4)
 #define ST25R3916_REG_TX_DRIVER_am_mod_6percent               (0x1U<<4)
 #define ST25R3916_REG_TX_DRIVER_am_mod_7percent               (0x2U<<4)
@@ -632,6 +663,24 @@
 #define ST25R3916_REG_TX_DRIVER_am_mod_22percent              (0xdU<<4)
 #define ST25R3916_REG_TX_DRIVER_am_mod_26percent              (0xeU<<4)
 #define ST25R3916_REG_TX_DRIVER_am_mod_40percent              (0xfU<<4)
+#elif defined(ST25R3916B)
+#define ST25R3916_REG_TX_DRIVER_am_mod_0percent               (0x0U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_8percent               (0x1U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_10percent              (0x2U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_11percent              (0x3U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_12percent              (0x4U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_13percent              (0x5U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_14percent              (0x6U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_15percent              (0x7U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_20percent              (0x8U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_25percent              (0x9U<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_30percent              (0xaU<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_40percent              (0xbU<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_50percent              (0xcU<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_60percent              (0xdU<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_70percent              (0xeU<<4)
+#define ST25R3916_REG_TX_DRIVER_am_mod_82percent              (0xfU<<4)
+#endif
 #define ST25R3916_REG_TX_DRIVER_am_mod_mask                   (0xfU<<4)
 #define ST25R3916_REG_TX_DRIVER_am_mod_shift                  (4U)
 #define ST25R3916_REG_TX_DRIVER_d_res3                        (1U<<3)
@@ -659,7 +708,11 @@
 #define ST25R3916_REG_AUX_MOD_lm_ext                          (1U<<5)
 #define ST25R3916_REG_AUX_MOD_lm_dri                          (1U<<4)
 #define ST25R3916_REG_AUX_MOD_res_am                          (1U<<3)
+#if defined(ST25R3916)
 #define ST25R3916_REG_AUX_MOD_rfu2                            (1U<<2)
+#elif defined(ST25R3916B)
+#define ST25R3916_REG_AUX_MOD_rgs_am                          (1U<<2)
+#endif /* ST25R3916B */
 #define ST25R3916_REG_AUX_MOD_rfu1                            (1U<<1)
 #define ST25R3916_REG_AUX_MOD_rfu0                            (1U<<0)
 
@@ -895,6 +948,107 @@
 #define ST25R3916_REG_UNDERSHOOT_CONF2_un_pattern1            (1U<<1)
 #define ST25R3916_REG_UNDERSHOOT_CONF2_un_pattern0            (1U<<0)
 
+#ifdef ST25R3916B
+
+#define ST25R3916_REG_AWS_CONF1_rfu3                          (1U<<7)
+#define ST25R3916_REG_AWS_CONF1_rfu2                          (1U<<6)
+#define ST25R3916_REG_AWS_CONF1_rfu1                          (1U<<5)
+#define ST25R3916_REG_AWS_CONF1_rfu0                          (1U<<4)
+#define ST25R3916_REG_AWS_CONF1_vddrf_cont                    (1U<<3)
+#define ST25R3916_REG_AWS_CONF1_rfam_sep_rx                   (1U<<2)
+#define ST25R3916_REG_AWS_CONF1_vddrf_rx_only                 (1U<<1)
+#define ST25R3916_REG_AWS_CONF1_rgs_txonoff                   (1U<<0)
+
+#define ST25R3916_REG_AWS_CONF2_rfu1                          (1U<<7)
+#define ST25R3916_REG_AWS_CONF2_rfu0                          (1U<<6)
+#define ST25R3916_REG_AWS_CONF2_am_sym                        (1U<<5)
+#define ST25R3916_REG_AWS_CONF2_en_modsink                    (1U<<4)
+#define ST25R3916_REG_AWS_CONF2_am_filt3                      (1U<<3)
+#define ST25R3916_REG_AWS_CONF2_am_filt2                      (1U<<2)
+#define ST25R3916_REG_AWS_CONF2_am_filt1                      (1U<<1)
+#define ST25R3916_REG_AWS_CONF2_am_filt0                      (1U<<0)
+#define ST25R3916_REG_AWS_CONF2_am_filt_mask                  (0xfU<<0)
+#define ST25R3916_REG_AWS_CONF2_am_filt_shift                 (0U)
+
+#define ST25R3916_REG_AWS_TIME1_tholdx1_3                     (1U<<7)
+#define ST25R3916_REG_AWS_TIME1_tholdx1_2                     (1U<<6)
+#define ST25R3916_REG_AWS_TIME1_tholdx1_1                     (1U<<5)
+#define ST25R3916_REG_AWS_TIME1_tholdx1_0                     (1U<<4)
+#define ST25R3916_REG_AWS_TIME1_tmoddx1_mask                  (0xfU<<4)
+#define ST25R3916_REG_AWS_TIME1_tmoddx1_shift                 (4U)
+#define ST25R3916_REG_AWS_TIME1_tmodsw1_3                     (1U<<3)
+#define ST25R3916_REG_AWS_TIME1_tmodsw1_2                     (1U<<2)
+#define ST25R3916_REG_AWS_TIME1_tmodsw1_1                     (1U<<1)
+#define ST25R3916_REG_AWS_TIME1_tmodsw1_0                     (1U<<0)
+#define ST25R3916_REG_AWS_TIME1_tmodsw1_mask                  (0xfU<<0)
+#define ST25R3916_REG_AWS_TIME1_tmodsw1_shift                 (0U)
+
+#define ST25R3916_REG_AWS_TIME2_tammod1_3                     (1U<<7)
+#define ST25R3916_REG_AWS_TIME2_tammod1_2                     (1U<<6)
+#define ST25R3916_REG_AWS_TIME2_tammod1_1                     (1U<<5)
+#define ST25R3916_REG_AWS_TIME2_tammod1_0                     (1U<<4)
+#define ST25R3916_REG_AWS_TIME2_tammod1_mask                  (0xfU<<4)
+#define ST25R3916_REG_AWS_TIME2_tammod1_shift                 (4U)
+#define ST25R3916_REG_AWS_TIME2_tdres1_3                      (1U<<3)
+#define ST25R3916_REG_AWS_TIME2_tdres1_2                      (1U<<2)
+#define ST25R3916_REG_AWS_TIME2_tdres1_1                      (1U<<1)
+#define ST25R3916_REG_AWS_TIME2_tdres1_0                      (1U<<0)
+#define ST25R3916_REG_AWS_TIME2_tdres1_mask                   (0xfU<<0)
+#define ST25R3916_REG_AWS_TIME2_tdres1_shift                  (0U)
+
+#define ST25R3916_REG_AWS_TIME3_tentx1_3                      (1U<<7)
+#define ST25R3916_REG_AWS_TIME3_tentx1_2                      (1U<<6)
+#define ST25R3916_REG_AWS_TIME3_tentx1_1                      (1U<<5)
+#define ST25R3916_REG_AWS_TIME3_tentx1_0                      (1U<<4)
+#define ST25R3916_REG_AWS_TIME3_tentx1_mask                   (0xfU<<4)
+#define ST25R3916_REG_AWS_TIME3_tentx1_shift                  (4U)
+#define ST25R3916_REG_AWS_TIME3_tmods2_3                      (1U<<3)
+#define ST25R3916_REG_AWS_TIME3_tmods2_2                      (1U<<2)
+#define ST25R3916_REG_AWS_TIME3_tmods2_1                      (1U<<1)
+#define ST25R3916_REG_AWS_TIME3_tmods2_0                      (1U<<0)
+#define ST25R3916_REG_AWS_TIME3_tmods2_mask                   (0xfU<<0)
+#define ST25R3916_REG_AWS_TIME3_tmods2_shift                  (0U)
+
+#define ST25R3916_REG_AWS_TIME4_tholdx2_3                     (1U<<7)
+#define ST25R3916_REG_AWS_TIME4_tholdx2_2                     (1U<<6)
+#define ST25R3916_REG_AWS_TIME4_tholdx2_1                     (1U<<5)
+#define ST25R3916_REG_AWS_TIME4_tholdx2_0                     (1U<<4)
+#define ST25R3916_REG_AWS_TIME4_tholdx2_mask                  (0xfU<<4)
+#define ST25R3916_REG_AWS_TIME4_tholdx2_shift                 (4U)
+#define ST25R3916_REG_AWS_TIME4_tmodsw2_3                     (1U<<3)
+#define ST25R3916_REG_AWS_TIME4_tmodsw2_2                     (1U<<2)
+#define ST25R3916_REG_AWS_TIME4_tmodsw2_1                     (1U<<1)
+#define ST25R3916_REG_AWS_TIME4_tmodsw2_0                     (1U<<0)
+#define ST25R3916_REG_AWS_TIME4_tmodsw2_mask                  (0xfU<<0)
+#define ST25R3916_REG_AWS_TIME4_tmodsw2_shift                 (0U)
+
+#define ST25R3916_REG_AWS_TIME5_tdres2_3                      (1U<<7)
+#define ST25R3916_REG_AWS_TIME5_tdres2_2                      (1U<<6)
+#define ST25R3916_REG_AWS_TIME5_tdres2_1                      (1U<<5)
+#define ST25R3916_REG_AWS_TIME5_tdres2_0                      (1U<<4)
+#define ST25R3916_REG_AWS_TIME5_tdres2_mask                   (0xfU<<4)
+#define ST25R3916_REG_AWS_TIME5_tdres2_shift                  (4U)
+#define ST25R3916_REG_AWS_TIME5_trez2_3                       (1U<<3)
+#define ST25R3916_REG_AWS_TIME5_trez2_2                       (1U<<2)
+#define ST25R3916_REG_AWS_TIME5_trez2_1                       (1U<<1)
+#define ST25R3916_REG_AWS_TIME5_trez2_0                       (1U<<0)
+#define ST25R3916_REG_AWS_TIME5_trez2_mask                    (0xfU<<0)
+#define ST25R3916_REG_AWS_TIME5_trez2_shift                   (0U)
+
+#define ST25R3916_REG_AWS_RC_CAL_rfu4                         (1U<<7)
+#define ST25R3916_REG_AWS_RC_CAL_rfu3                         (1U<<6)
+#define ST25R3916_REG_AWS_RC_CAL_rfu2                         (1U<<5)
+#define ST25R3916_REG_AWS_RC_CAL_rfu1                         (1U<<4)
+#define ST25R3916_REG_AWS_RC_CAL_rfu0                         (1U<<3)
+#define ST25R3916_REG_AWS_RC_CAL_rc_cal_ro_2                  (1U<<2)
+#define ST25R3916_REG_AWS_RC_CAL_rc_cal_ro_1                  (1U<<1)
+#define ST25R3916_REG_AWS_RC_CAL_rc_cal_ro_0                  (1U<<0)
+#define ST25R3916_REG_AWS_RC_CAL_rc_cal_ro_mask               (0x7U<<0)
+#define ST25R3916_REG_AWS_RC_CAL_rc_cal_ro_shift              (0U)
+
+#endif /* ST25R3916B */
+
+
 #define ST25R3916_REG_WUP_TIMER_CONTROL_wur                   (1U<<7)
 #define ST25R3916_REG_WUP_TIMER_CONTROL_wut2                  (1U<<6)
 #define ST25R3916_REG_WUP_TIMER_CONTROL_wut1                  (1U<<5)
@@ -904,7 +1058,11 @@
 #define ST25R3916_REG_WUP_TIMER_CONTROL_wto                   (1U<<3)
 #define ST25R3916_REG_WUP_TIMER_CONTROL_wam                   (1U<<2)
 #define ST25R3916_REG_WUP_TIMER_CONTROL_wph                   (1U<<1)
+#if defined(ST25R3916)
 #define ST25R3916_REG_WUP_TIMER_CONTROL_wcap                  (1U<<0)
+#elif defined(ST25R3916B)
+#define ST25R3916_REG_WUP_TIMER_CONTROL_rfu0                  (1U<<0)
+#endif /* ST25R3916 */
 
 #define ST25R3916_REG_AMPLITUDE_MEASURE_CONF_am_d3            (1U<<7)
 #define ST25R3916_REG_AMPLITUDE_MEASURE_CONF_am_d2            (1U<<6)
@@ -932,6 +1090,7 @@
 #define ST25R3916_REG_PHASE_MEASURE_CONF_pm_aew_shift         (1U)
 #define ST25R3916_REG_PHASE_MEASURE_CONF_pm_ae                (1U<<0)
 
+#if defined(ST25R3916)
 #define ST25R3916_REG_CAPACITANCE_MEASURE_CONF_cm_d3          (1U<<7)
 #define ST25R3916_REG_CAPACITANCE_MEASURE_CONF_cm_d2          (1U<<6)
 #define ST25R3916_REG_CAPACITANCE_MEASURE_CONF_cm_d1          (1U<<5)
@@ -944,6 +1103,35 @@
 #define ST25R3916_REG_CAPACITANCE_MEASURE_CONF_cm_aew_mask    (0x3U<<1)
 #define ST25R3916_REG_CAPACITANCE_MEASURE_CONF_cm_aew_shift   (1U)
 #define ST25R3916_REG_CAPACITANCE_MEASURE_CONF_cm_ae          (1U<<0)
+#elif defined(ST25R3916B)
+#define ST25R3916_REG_MEAS_TX_DELAY_m_phase_ana               (1U<<7)
+#define ST25R3916_REG_MEAS_TX_DELAY_m_amp_ana                 (1U<<6)
+#define ST25R3916_REG_MEAS_TX_DELAY_rfu1                      (1U<<5)
+#define ST25R3916_REG_MEAS_TX_DELAY_rfu0                      (1U<<4)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del3              (1U<<3)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del2              (1U<<2)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del1              (1U<<1)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del0              (1U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_0ms           (0U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_0_60ms        (1U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_1_21ms        (2U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_1_81ms        (3U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_2_42ms        (4U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_3_02ms        (5U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_3_62ms        (6U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_4_23ms        (7U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_4_83ms        (8U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_5_44ms        (9U<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_6_44ms        (0xAU<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_7_25ms        (0xBU<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_8_46ms        (0xCU<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_9_67ms        (0xDU<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_10_87ms       (0xEU<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_12_08ms       (0xFU<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_mask          (0xFU<<0)
+#define ST25R3916_REG_MEAS_TX_DELAY_meas_tx_del_shift         (0U)
+
+#endif /* ST25R3916 */
 
 #define ST25R3916_REG_IC_IDENTITY_ic_type4                    (1U<<7)
 #define ST25R3916_REG_IC_IDENTITY_ic_type3                    (1U<<6)
@@ -951,6 +1139,7 @@
 #define ST25R3916_REG_IC_IDENTITY_ic_type1                    (1U<<4)
 #define ST25R3916_REG_IC_IDENTITY_ic_type0                    (1U<<3)
 #define ST25R3916_REG_IC_IDENTITY_ic_type_st25r3916           (5U<<3)
+#define ST25R3916_REG_IC_IDENTITY_ic_type_st25r3916B          (6U<<3)
 #define ST25R3916_REG_IC_IDENTITY_ic_type_mask                (0x1fU<<3)
 #define ST25R3916_REG_IC_IDENTITY_ic_type_shift               (3U)
 #define ST25R3916_REG_IC_IDENTITY_ic_rev2                     (1U<<2)
@@ -960,7 +1149,7 @@
 #define ST25R3916_REG_IC_IDENTITY_ic_rev_mask                 (7U<<0)
 #define ST25R3916_REG_IC_IDENTITY_ic_rev_shift                (0U)
 
-/*! \endcond DOXYGEN_SUPRESS */
+/*! \endcond DOXYGEN_SUPPRESS */
 
 /*
 ******************************************************************************
@@ -977,9 +1166,9 @@
  *  \param[in]  reg: Address of register to read.
  *  \param[out] val: Returned value.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ReadRegister( uint8_t reg, uint8_t* val );
@@ -996,9 +1185,9 @@ ReturnCode st25r3916ReadRegister( uint8_t reg, uint8_t* val );
  *  \param[in]  values: pointer to a buffer where the result shall be written to.
  *  \param[in]  length: Number of registers to be read out.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ReadMultipleRegisters( uint8_t reg, uint8_t* values, uint8_t length );
@@ -1012,9 +1201,9 @@ ReturnCode st25r3916ReadMultipleRegisters( uint8_t reg, uint8_t* values, uint8_t
  *  \param[in]  reg: Address of the register to write.
  *  \param[in]  val: Value to be written.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916WriteRegister( uint8_t reg, uint8_t val );
@@ -1031,9 +1220,9 @@ ReturnCode st25r3916WriteRegister( uint8_t reg, uint8_t val );
  *  \param[in]  values: pointer to a buffer containing the values to be written.
  *  \param[in]  length: Number of values to be written.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916WriteMultipleRegisters( uint8_t reg, const uint8_t* values, uint8_t length );
@@ -1048,9 +1237,9 @@ ReturnCode st25r3916WriteMultipleRegisters( uint8_t reg, const uint8_t* values, 
  *                      to the FIFO.
  *  \param[in]  length: Number of values to be written.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916WriteFifo( const uint8_t* values, uint16_t length );
@@ -1068,9 +1257,9 @@ ReturnCode st25r3916WriteFifo( const uint8_t* values, uint16_t length );
  *  \note: This function doesn't check whether \a length is really the
  *  number of available bytes in FIFO
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ReadFifo( uint8_t* buf, uint16_t length );
@@ -1086,9 +1275,9 @@ ReturnCode st25r3916ReadFifo( uint8_t* buf, uint16_t length );
  *                      to the Passive Target Memory.
  *  \param[in]  length: Number of values to be written.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916WritePTMem( const uint8_t* values, uint16_t length );
@@ -1104,9 +1293,9 @@ ReturnCode st25r3916WritePTMem( const uint8_t* values, uint16_t length );
  *                       written to.
  *  \param[in]  length: Number of bytes to read.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ReadPTMem( uint8_t* values, uint16_t length );
@@ -1121,9 +1310,9 @@ ReturnCode st25r3916ReadPTMem( uint8_t* values, uint16_t length );
  *                      to the Passive Target Memory 
  *  \param[in]  length: Number of values to be written.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916WritePTMemF( const uint8_t* values, uint16_t length );
@@ -1138,9 +1327,9 @@ ReturnCode st25r3916WritePTMemF( const uint8_t* values, uint16_t length );
  *                      to the Passive Target Memory.
  *  \param[in]  length: Number of values to be written.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916WritePTMemTSN( const uint8_t* values, uint16_t length );
@@ -1155,9 +1344,9 @@ ReturnCode st25r3916WritePTMemTSN( const uint8_t* values, uint16_t length );
  *
  *  \param[in]  cmd : code of the direct command to be executed.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ExecuteCommand( uint8_t cmd );
@@ -1171,9 +1360,9 @@ ReturnCode st25r3916ExecuteCommand( uint8_t cmd );
  *  \param[in]   reg: Address of the register to read
  *  \param[out]  val: Returned read value
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ReadTestRegister( uint8_t reg, uint8_t* val );
@@ -1187,9 +1376,9 @@ ReturnCode st25r3916ReadTestRegister( uint8_t reg, uint8_t* val );
  *  \param[in]  reg: Address of the register to write
  *  \param[in]  val: Value to be written
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916WriteTestRegister( uint8_t reg, uint8_t val );
@@ -1203,9 +1392,9 @@ ReturnCode st25r3916WriteTestRegister( uint8_t reg, uint8_t val );
  *  \param[in]  reg: Address of the register clear
  *  \param[in]  clr_mask: Bitmask of bit to be cleared
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ClrRegisterBits( uint8_t reg, uint8_t clr_mask );
@@ -1219,9 +1408,9 @@ ReturnCode st25r3916ClrRegisterBits( uint8_t reg, uint8_t clr_mask );
  *  \param[in]  reg: Address of the register clear
  *  \param[in]  set_mask: Bitmask of bit to be cleared
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916SetRegisterBits( uint8_t reg, uint8_t set_mask );
@@ -1237,9 +1426,9 @@ ReturnCode st25r3916SetRegisterBits( uint8_t reg, uint8_t set_mask );
  *  \param[in]  valueMask: bitmask of bits to be changed
  *  \param[in]  value: the bits to be written on the enabled valueMask bits
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ChangeRegisterBits( uint8_t reg, uint8_t valueMask, uint8_t value );
@@ -1255,9 +1444,9 @@ ReturnCode st25r3916ChangeRegisterBits( uint8_t reg, uint8_t valueMask, uint8_t 
  *  \param[in]  clr_mask: bitmask of bits to be cleared to 0.
  *  \param[in]  set_mask: bitmask of bits to be set to 1.
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ModifyRegister( uint8_t reg, uint8_t clr_mask, uint8_t set_mask );
@@ -1273,9 +1462,9 @@ ReturnCode st25r3916ModifyRegister( uint8_t reg, uint8_t clr_mask, uint8_t set_m
  *  \param[in]  valueMask: bitmask of bits to be changed
  *  \param[in]  value: the bits to be written on the enabled valueMask bits
  *
- *  \return ERR_NONE  : Operation successful
- *  \return ERR_PARAM : Invalid parameter
- *  \return ERR_SEND  : Transmission error or acknowledge not received
+ *  \return RFAL_ERR_NONE  : Operation successful
+ *  \return RFAL_ERR_PARAM : Invalid parameter
+ *  \return RFAL_ERR_SEND  : Transmission error or acknowledge not received
  *****************************************************************************
  */
 ReturnCode st25r3916ChangeTestRegisterBits( uint8_t reg, uint8_t valueMask, uint8_t value );

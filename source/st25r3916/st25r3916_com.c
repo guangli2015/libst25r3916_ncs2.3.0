@@ -38,11 +38,11 @@
 #include "st25r3916.h"
 #include "st25r3916_com.h"
 #include "st25r3916_led.h"
-#include "st_errno.h"
-#include "platform.h"
-#include "utils.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 
-
+#include <zephyr/logging/log.h>
+LOG_MODULE_DECLARE(st25r3916);
 /*
 ******************************************************************************
 * LOCAL DEFINES
@@ -188,7 +188,7 @@ static void st25r3916comStart( void )
 #else
     /* Perform the chip select */
     platformSpiSelect();
-    
+
     #if defined(ST25R_COM_SINGLETXRX)
         comBufIt = 0;                                  /* reset local buffer position   */
     #endif /* ST25R_COM_SINGLETXRX */
@@ -227,8 +227,8 @@ static void st25r3916comRepeatStart( void )
 /*******************************************************************************/
 static void st25r3916comTx( const uint8_t* txBuf, uint16_t txLen, bool last, bool txOnly )
 {
-    NO_WARNING(last);
-    NO_WARNING(txOnly);
+    RFAL_NO_WARNING(last);
+    RFAL_NO_WARNING(txOnly);
     
     if( txLen > 0U )
     {
@@ -238,10 +238,10 @@ static void st25r3916comTx( const uint8_t* txBuf, uint16_t txLen, bool last, boo
     
         #ifdef ST25R_COM_SINGLETXRX
             
-            ST_MEMCPY( &comBuf[comBufIt], txBuf, MIN( txLen, (ST25R3916_BUF_LEN - comBufIt) ) );    /* copy tx data to local buffer                      */
-            comBufIt += MIN( txLen, (ST25R3916_BUF_LEN - comBufIt) );                               /* store position on local buffer                    */
+            RFAL_MEMCPY( &comBuf[comBufIt], txBuf, RFAL_MIN( txLen, (uint16_t)(ST25R3916_BUF_LEN - comBufIt) ) );    /* copy tx data to local buffer                      */
+            comBufIt += RFAL_MIN( txLen, (ST25R3916_BUF_LEN - comBufIt) );                                         /* store position on local buffer                    */
                 
-            if( last && txOnly )                                                                    /* only perform SPI transaction if no Rx will follow */
+            if( last && txOnly )                                                                              /* only perform SPI transaction if no Rx will follow */
             {
                 platformSpiTxRx( comBuf, NULL, comBufIt );
             }
@@ -265,13 +265,13 @@ static void st25r3916comRx( uint8_t* rxBuf, uint16_t rxLen )
 #else /* RFAL_USE_I2C */
         
     #ifdef ST25R_COM_SINGLETXRX
-        ST_MEMSET( &comBuf[comBufIt], 0x00, MIN( rxLen, (ST25R3916_BUF_LEN - comBufIt) ) );     /* clear outgoing buffer                                  */
-        platformSpiTxRx( comBuf, comBuf, MIN( (comBufIt + rxLen), ST25R3916_BUF_LEN ) );        /* transceive as a single SPI call                        */
-        ST_MEMCPY( rxBuf, &comBuf[comBufIt], MIN( rxLen, (ST25R3916_BUF_LEN - comBufIt) ) );    /* copy from local buf to output buffer and skip cmd byte */
+        RFAL_MEMSET( &comBuf[comBufIt], 0x00, RFAL_MIN( rxLen, (uint16_t)(ST25R3916_BUF_LEN - comBufIt) ) );     /* clear outgoing buffer                                  */
+        platformSpiTxRx( comBuf, comBuf, RFAL_MIN( (comBufIt + rxLen), ST25R3916_BUF_LEN ) );                  /* transceive as a single SPI call                        */
+        RFAL_MEMCPY( rxBuf, &comBuf[comBufIt], RFAL_MIN( rxLen, (uint16_t)(ST25R3916_BUF_LEN - comBufIt) ) );    /* copy from local buf to output buffer and skip cmd byte */
     #else
         if( rxBuf != NULL)
         {
-            ST_MEMSET( rxBuf, 0x00, rxLen );                                                    /* clear outgoing buffer                                  */
+            RFAL_MEMSET( rxBuf, 0x00, rxLen );                                                              /* clear outgoing buffer                                  */
         }
         platformSpiTxRx( NULL, rxBuf, rxLen );
     #endif /* ST25R_COM_SINGLETXRX */
@@ -319,7 +319,7 @@ ReturnCode st25r3916ReadMultipleRegisters( uint8_t reg, uint8_t* values, uint8_t
         st25r3916comStop();
     }
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -351,7 +351,7 @@ ReturnCode st25r3916WriteMultipleRegisters( uint8_t reg, const uint8_t* values, 
         st25r3916ledEvtWrMultiReg( reg, values, length);
     }
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -360,7 +360,7 @@ ReturnCode st25r3916WriteFifo( const uint8_t* values, uint16_t length )
 {
     if( length > ST25R3916_FIFO_DEPTH )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     if( length > 0U )
@@ -371,7 +371,7 @@ ReturnCode st25r3916WriteFifo( const uint8_t* values, uint16_t length )
         st25r3916comStop();
     }
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -388,7 +388,7 @@ ReturnCode st25r3916ReadFifo( uint8_t* buf, uint16_t length )
         st25r3916comStop();
     }
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -397,7 +397,7 @@ ReturnCode st25r3916WritePTMem( const uint8_t* values, uint16_t length )
 {
     if( length > ST25R3916_PTM_LEN )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     if( length > 0U )
@@ -408,7 +408,7 @@ ReturnCode st25r3916WritePTMem( const uint8_t* values, uint16_t length )
         st25r3916comStop();
     }
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -421,7 +421,7 @@ ReturnCode st25r3916ReadPTMem( uint8_t* values, uint16_t length )
     {
         if( length > ST25R3916_PTM_LEN )
         {
-            return ERR_PARAM;
+            return RFAL_ERR_PARAM;
         }
         
         st25r3916comStart();
@@ -432,10 +432,10 @@ ReturnCode st25r3916ReadPTMem( uint8_t* values, uint16_t length )
         st25r3916comStop();
         
         /* Copy PTMem content without prepended byte */
-        ST_MEMCPY( values, (tmp+ST25R3916_REG_LEN), length );
+        RFAL_MEMCPY( values, (tmp+ST25R3916_REG_LEN), length );
     }
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -444,7 +444,7 @@ ReturnCode st25r3916WritePTMemF( const uint8_t* values, uint16_t length )
 {
     if( length > (ST25R3916_PTM_F_LEN + ST25R3916_PTM_TSN_LEN) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     if( length > 0U )
@@ -455,7 +455,7 @@ ReturnCode st25r3916WritePTMemF( const uint8_t* values, uint16_t length )
         st25r3916comStop();
     }
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -464,7 +464,7 @@ ReturnCode st25r3916WritePTMemTSN( const uint8_t* values, uint16_t length )
 {
     if( length > ST25R3916_PTM_TSN_LEN )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     if(length > 0U)
@@ -475,7 +475,7 @@ ReturnCode st25r3916WritePTMemTSN( const uint8_t* values, uint16_t length )
         st25r3916comStop();
     }
 
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -489,7 +489,7 @@ ReturnCode st25r3916ExecuteCommand( uint8_t cmd )
     /* Send a cmd event to LED handling */
     st25r3916ledEvtCmd(cmd);
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -503,7 +503,7 @@ ReturnCode st25r3916ReadTestRegister( uint8_t reg, uint8_t* val )
     st25r3916comRx( val, ST25R3916_REG_LEN );
     st25r3916comStop();
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -518,7 +518,7 @@ ReturnCode st25r3916WriteTestRegister( uint8_t reg, uint8_t val )
     st25r3916comTx( &value, ST25R3916_REG_LEN, true, true );
     st25r3916comStop();
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -529,12 +529,12 @@ ReturnCode st25r3916ClrRegisterBits( uint8_t reg, uint8_t clr_mask )
     uint8_t    rdVal;
     
     /* Read current reg value */
-    EXIT_ON_ERR( ret, st25r3916ReadRegister(reg, &rdVal) );
+    RFAL_EXIT_ON_ERR( ret, st25r3916ReadRegister(reg, &rdVal) );
     
     /* Only perform a Write if value to be written is different */
     if( ST25R3916_OPTIMIZE && (rdVal == (uint8_t)(rdVal & ~clr_mask)) )
     {
-        return ERR_NONE;
+        return RFAL_ERR_NONE;
     }
     
     /* Write new reg value */
@@ -549,12 +549,12 @@ ReturnCode st25r3916SetRegisterBits( uint8_t reg, uint8_t set_mask )
     uint8_t    rdVal;
     
     /* Read current reg value */
-    EXIT_ON_ERR( ret, st25r3916ReadRegister(reg, &rdVal) );
+    RFAL_EXIT_ON_ERR( ret, st25r3916ReadRegister(reg, &rdVal) );
     
     /* Only perform a Write if the value to be written is different */
     if( ST25R3916_OPTIMIZE && (rdVal == (rdVal | set_mask)) )
     {
-        return ERR_NONE;
+        return RFAL_ERR_NONE;
     }
     
     /* Write new reg value */
@@ -577,7 +577,7 @@ ReturnCode st25r3916ModifyRegister( uint8_t reg, uint8_t clr_mask, uint8_t set_m
     uint8_t    wrVal;
     
     /* Read current reg value */
-    EXIT_ON_ERR( ret, st25r3916ReadRegister(reg, &rdVal) );
+    RFAL_EXIT_ON_ERR( ret, st25r3916ReadRegister(reg, &rdVal) );
     
     /* Compute new value */
     wrVal  = (uint8_t)(rdVal & ~clr_mask);
@@ -586,7 +586,7 @@ ReturnCode st25r3916ModifyRegister( uint8_t reg, uint8_t clr_mask, uint8_t set_m
     /* Only perform a Write if the value to be written is different */
     if( ST25R3916_OPTIMIZE && (rdVal == wrVal) )
     {
-        return ERR_NONE;
+        return RFAL_ERR_NONE;
     }
     
     /* Write new reg value */
@@ -602,7 +602,7 @@ ReturnCode st25r3916ChangeTestRegisterBits( uint8_t reg, uint8_t valueMask, uint
     uint8_t    wrVal;
     
     /* Read current reg value */
-    EXIT_ON_ERR( ret, st25r3916ReadTestRegister(reg, &rdVal) );
+    RFAL_EXIT_ON_ERR( ret, st25r3916ReadTestRegister(reg, &rdVal) );
     
     /* Compute new value */
     wrVal  = (uint8_t)(rdVal & ~valueMask);
@@ -611,7 +611,7 @@ ReturnCode st25r3916ChangeTestRegisterBits( uint8_t reg, uint8_t valueMask, uint
     /* Only perform a Write if the value to be written is different */
     if( ST25R3916_OPTIMIZE && (rdVal == wrVal) )
     {
-        return ERR_NONE;
+        return RFAL_ERR_NONE;
     }
     
     /* Write new reg value */

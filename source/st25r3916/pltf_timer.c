@@ -13,7 +13,7 @@
 #include <zephyr/drivers/gpio.h>
 #include <zephyr/logging/log.h>
 #include "pltf_timer.h"
-#include "platform.h"
+#include "rfal_platform.h"
 
 
 LOG_MODULE_DECLARE(st25r3916);

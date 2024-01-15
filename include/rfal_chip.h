@@ -54,8 +54,8 @@
 * INCLUDES
 ******************************************************************************
 */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_rf.h"
 
 
@@ -70,14 +70,14 @@
  * Checks if the given register is valid and if so, writes the value(s)
  * on the RF Chip register
  * 
- * \param[in] reg: register address to be written, or the first if len > 1
- * \param[in] values: pointer with content to be written on the register(s)
- * \param[in] len: number of consecutive registers to be written
+ * \param[in] reg    : register address to be written, or the first if len > 1
+ * \param[in] values : pointer with content to be written on the register(s)
+ * \param[in] len    : number of consecutive registers to be written
  *  
  * 
- * \return ERR_PARAM    : Invalid register or bad request
- * \return ERR_NOTSUPP  : Feature not supported
- * \return ERR_NONE     : Write done with no error
+ * \return RFAL_ERR_PARAM    : Invalid register or bad request
+ * \return RFAL_ERR_NOTSUPP  : Feature not supported
+ * \return RFAL_ERR_NONE     : Write done with no error
  *****************************************************************************
  */
 ReturnCode rfalChipWriteReg( uint16_t reg, const uint8_t* values, uint8_t len );
@@ -89,13 +89,13 @@ ReturnCode rfalChipWriteReg( uint16_t reg, const uint8_t* values, uint8_t len );
  * Checks if the given register is valid and if so, reads the value(s)
  * of the RF Chip register(s)
  * 
- * \param[in]  reg: register address to be read, or the first if len > 1
- * \param[out] values: pointer where the register(s) read content will be placed 
- * \param[in]  len: number of consecutive registers to be read  
+ * \param[in]  reg    : register address to be read, or the first if len > 1
+ * \param[out] values : pointer where the register(s) read content will be placed 
+ * \param[in]  len    : number of consecutive registers to be read  
  * 
- * \return ERR_PARAM    : Invalid register or bad request
- * \return ERR_NOTSUPP  : Feature not supported
- * \return ERR_NONE     : Read done with no error
+ * \return RFAL_ERR_PARAM    : Invalid register or bad request
+ * \return RFAL_ERR_NOTSUPP  : Feature not supported
+ * \return RFAL_ERR_NONE     : Read done with no error
  *****************************************************************************
  */
 ReturnCode rfalChipReadReg( uint16_t reg, uint8_t* values, uint8_t len );
@@ -106,13 +106,13 @@ ReturnCode rfalChipReadReg( uint16_t reg, uint8_t* values, uint8_t len );
  *
  * Change the value of the register bits on the RF Chip Test set in the valueMask. 
  * 
- * \param[in] reg: register address to be modified
- * \param[in] valueMask: mask value of the register bits to be changed
- * \param[in] value: register value to be set
+ * \param[in] reg       : register address to be modified
+ * \param[in] valueMask : mask value of the register bits to be changed
+ * \param[in] value     : register value to be set
  * 
- * \return ERR_PARAM    : Invalid register or bad request
- * \return ERR_NOTSUPP  : Feature not supported
- * \return ERR_OK       : Change done with no error
+ * \return RFAL_ERR_PARAM    : Invalid register or bad request
+ * \return RFAL_ERR_NOTSUPP  : Feature not supported
+ * \return RFAL_ERR_OK       : Change done with no error
  *****************************************************************************
  */
 ReturnCode rfalChipChangeRegBits( uint16_t reg, uint8_t valueMask, uint8_t value );
@@ -123,13 +123,13 @@ ReturnCode rfalChipChangeRegBits( uint16_t reg, uint8_t valueMask, uint8_t value
  *
  * Writes the value on the RF Chip Test register
  * 
- * \param[in] reg: register address to be written
- * \param[in] value: value to be written on the register
+ * \param[in] reg   : register address to be written
+ * \param[in] value : value to be written on the register
  *  
  * 
- * \return ERR_PARAM    : Invalid register or bad request
- * \return ERR_NOTSUPP  : Feature not supported
- * \return ERR_NONE     : Write done with no error
+ * \return RFAL_ERR_PARAM    : Invalid register or bad request
+ * \return RFAL_ERR_NOTSUPP  : Feature not supported
+ * \return RFAL_ERR_NONE     : Write done with no error
  *****************************************************************************
  */
 ReturnCode rfalChipWriteTestReg( uint16_t reg, uint8_t value );
@@ -140,12 +140,12 @@ ReturnCode rfalChipWriteTestReg( uint16_t reg, uint8_t value );
  *
  * Reads the value of the RF Chip Test register
  * 
- * \param[in]  reg: register address to be read
- * \param[out] value: pointer where the register content will be placed  
+ * \param[in]  reg   : register address to be read
+ * \param[out] value : pointer where the register content will be placed  
  * 
- * \return ERR_PARAM    :Invalid register or bad request
- * \return ERR_NOTSUPP  : Feature not supported
- * \return ERR_NONE     : Read done with no error
+ * \return RFAL_ERR_PARAM    :Invalid register or bad request
+ * \return RFAL_ERR_NOTSUPP  : Feature not supported
+ * \return RFAL_ERR_NONE     : Read done with no error
  *****************************************************************************
  */
 ReturnCode rfalChipReadTestReg( uint16_t reg, uint8_t* value );
@@ -156,13 +156,13 @@ ReturnCode rfalChipReadTestReg( uint16_t reg, uint8_t* value );
  *
  * Change the value of the register bits on the RF Chip Test set in the valueMask. 
  * 
- * \param[in] reg: test register address to be modified
- * \param[in] valueMask: mask value of the register bits to be changed
- * \param[in] value: register value to be set
+ * \param[in] reg       : test register address to be modified
+ * \param[in] valueMask : mask value of the register bits to be changed
+ * \param[in] value     : register value to be set
  * 
- * \return ERR_PARAM     : Invalid register or bad request
- * \return ERR_NOTSUPP   : Feature not supported
- * \return ERR_OK        : Change done with no error
+ * \return RFAL_ERR_PARAM     : Invalid register or bad request
+ * \return RFAL_ERR_NOTSUPP   : Feature not supported
+ * \return RFAL_ERR_OK        : Change done with no error
  *****************************************************************************
  */
 ReturnCode rfalChipChangeTestRegBits( uint16_t reg, uint8_t valueMask, uint8_t value );
@@ -174,11 +174,11 @@ ReturnCode rfalChipChangeTestRegBits( uint16_t reg, uint8_t valueMask, uint8_t v
  * Checks if the given command is valid and if so, executes it on 
  * the RF Chip
  * 
- * \param[in] cmd: direct command to be executed
+ * \param[in] cmd : direct command to be executed
  * 
- * \return ERR_PARAM     : Invalid command or bad request
- * \return  ERR_NOTSUPP  : Feature not supported
- * \return ERR_NONE      : Direct command executed with no error
+ * \return RFAL_ERR_PARAM     : Invalid command or bad request
+ * \return RFAL_ERR_NOTSUPP   : Feature not supported
+ * \return RFAL_ERR_NONE      : Direct command executed with no error
  *****************************************************************************
  */
 ReturnCode rfalChipExecCmd( uint16_t cmd );
@@ -191,9 +191,9 @@ ReturnCode rfalChipExecCmd( uint16_t cmd );
  * 
  * \param[in] rfo : the RFO value to be used
  *
- * \return  ERR_IO           : Internal error
- * \return  ERR_NOTSUPP      : Feature not supported
- * \return  ERR_NONE         : No error
+ * \return  RFAL_ERR_IO           : Internal error
+ * \return  RFAL_ERR_NOTSUPP      : Feature not supported
+ * \return  RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalChipSetRFO( uint8_t rfo );
@@ -207,9 +207,9 @@ ReturnCode rfalChipSetRFO( uint8_t rfo );
  *
  * \param[out] result : the current RFO value 
  *
- * \return  ERR_IO           : Internal error
- * \return  ERR_NOTSUPP      : Feature not supported
- * \return  ERR_NONE         : No error
+ * \return  RFAL_ERR_IO           : Internal error
+ * \return  RFAL_ERR_NOTSUPP      : Feature not supported
+ * \return  RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalChipGetRFO( uint8_t* result );
@@ -223,9 +223,9 @@ ReturnCode rfalChipGetRFO( uint8_t* result );
  *
  * \param[out] result : result of RF measurement
  *
- * \return  ERR_IO           : Internal error
- * \return  ERR_NOTSUPP      : Feature not supported
- * \return  ERR_NONE         : No error
+ * \return  RFAL_ERR_IO           : Internal error
+ * \return  RFAL_ERR_NOTSUPP      : Feature not supported
+ * \return  RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalChipMeasureAmplitude( uint8_t* result );
@@ -239,9 +239,9 @@ ReturnCode rfalChipMeasureAmplitude( uint8_t* result );
  *
  * \param[out] result : result of Phase measurement
  *
- * \return  ERR_IO           : Internal error
- * \return  ERR_NOTSUPP      : Feature not supported
- * \return  ERR_NONE         : No error
+ * \return  RFAL_ERR_IO           : Internal error
+ * \return  RFAL_ERR_NOTSUPP      : Feature not supported
+ * \return  RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalChipMeasurePhase( uint8_t* result );
@@ -255,9 +255,9 @@ ReturnCode rfalChipMeasurePhase( uint8_t* result );
  *
  * \param[out] result : result of Capacitance measurement
  *
- * \return  ERR_IO           : Internal error
- * \return  ERR_NOTSUPP      : Feature not supported
- * \return  ERR_NONE         : No error
+ * \return  RFAL_ERR_IO      : Internal error
+ * \return  RFAL_ERR_NOTSUPP : Feature not supported
+ * \return  RFAL_ERR_NONE    : No error
  *****************************************************************************
  */
 ReturnCode rfalChipMeasureCapacitance( uint8_t* result );
@@ -269,16 +269,66 @@ ReturnCode rfalChipMeasureCapacitance( uint8_t* result );
  *
  * Measures the Power Supply
  *
- * \param[in]   param : measurement parameter (chip specific)
+ * \param[in]  param  : measurement parameter (chip specific)
  * \param[out] result : result of the measurement
  *
- * \return  ERR_IO           : Internal error
- * \return  ERR_NOTSUPP      : Feature not supported
- * \return  ERR_NONE         : No error
+ * \return  RFAL_ERR_IO      : Internal error
+ * \return  RFAL_ERR_NOTSUPP : Feature not supported
+ * \return  RFAL_ERR_NONE    : No error
  *****************************************************************************
  */
 ReturnCode rfalChipMeasurePowerSupply( uint8_t param, uint8_t* result );
 
+
+/*! 
+ *****************************************************************************
+ * \brief  Measure I and Q
+ *
+ * Measures I and Q channels
+ *
+ *  \param[out] resI : 8 bit long result of the I channel (signed)
+ *  \param[out] resQ : 8 bit long result of the Q channel (signed)
+ *
+ * \return  RFAL_ERR_IO      : Internal error
+ * \return  RFAL_ERR_NOTSUPP : Feature not supported
+ * \return  RFAL_ERR_NONE    : No error
+ *****************************************************************************
+ */
+ReturnCode rfalChipMeasureIQ( int8_t* resI, int8_t* resQ );
+
+
+/*! 
+ *****************************************************************************
+ * \brief  Measure combined I and Q
+ *
+ * Measures I and Q channels and combines them
+ *
+ *  \param[out] result : I and Q combined
+ *
+ * \return  RFAL_ERR_IO      : Internal error
+ * \return  RFAL_ERR_NOTSUPP : Feature not supported
+ * \return  RFAL_ERR_NONE    : No error
+ *****************************************************************************
+ */
+ReturnCode rfalChipMeasureCombinedIQ( uint8_t* result );
+
+
+/*! 
+ *****************************************************************************
+ * \brief  Set Antenna mode
+ *
+ * Sets the antenna mode. 
+ * Differential or single ended antenna mode (RFO1 or RFO2)
+ *
+ *  \param[in]   single : FALSE differential ; single ended mode
+ *  \param[in]    rfiox : FALSE   RFI1/RFO1  ; TRUE   RFI2/RFO2
+ *
+ * \return  RFAL_ERR_IO      : Internal error
+ * \return  RFAL_ERR_NOTSUPP : Feature not supported
+ * \return  RFAL_ERR_NONE    : No error
+ *****************************************************************************
+ */
+ReturnCode rfalChipSetAntennaMode( bool single, bool rfiox );
 
 #endif /* RFAL_CHIP_H */
 

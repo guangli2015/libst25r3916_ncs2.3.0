@@ -42,7 +42,7 @@
  ******************************************************************************
  */
  #include "rfal_t4t.h"
- #include "utils.h"
+ #include "rfal_utils.h"
  
  /*
  ******************************************************************************
@@ -101,7 +101,7 @@ ReturnCode rfalT4TPollerComposeCAPDU( const rfalT4tCApduParam *apduParam )
     
     if( (apduParam == NULL) || (apduParam->cApduBuf == NULL) || (apduParam->cApduLen == NULL) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     msgIt                  = 0;
@@ -116,13 +116,13 @@ ReturnCode rfalT4TPollerComposeCAPDU( const rfalT4tCApduParam *apduParam )
         if( apduParam->Lc == 0U )
         {
             /* Extented field coding not supported */
-            return ERR_PARAM;
+            return RFAL_ERR_PARAM;
         }
         
         /* Check whether requested Lc fits */
         if( (uint16_t)apduParam->Lc > (uint16_t)(RFAL_FEATURE_ISO_DEP_APDU_MAX_LEN - RFAL_T4T_LE_LEN) )
         {
-            return ERR_PARAM; /*  PRQA S  2880 # MISRA 2.1 - Unreachable code due to configuration option being set/unset  */ 
+            return RFAL_ERR_PARAM; /*  PRQA S  2880 # MISRA 2.1 - Unreachable code due to configuration option being set/unset  */ 
         }
         
         /* Calculate the header length a place the data/body where it should be */
@@ -131,9 +131,9 @@ ReturnCode rfalT4TPollerComposeCAPDU( const rfalT4tCApduParam *apduParam )
         /* make sure not to exceed buffer size */
         if( ((uint16_t)hdrLen + (uint16_t)apduParam->Lc + (apduParam->LeFlag ? RFAL_T4T_LC_LEN : 0U)) > RFAL_FEATURE_ISO_DEP_APDU_MAX_LEN )
         {
-            return ERR_NOMEM; /*  PRQA S  2880 # MISRA 2.1 - Unreachable code due to configuration option being set/unset */ 
+            return RFAL_ERR_NOMEM; /*  PRQA S  2880 # MISRA 2.1 - Unreachable code due to configuration option being set/unset */ 
         }
-        ST_MEMMOVE( &apduParam->cApduBuf->apdu[hdrLen], apduParam->cApduBuf->apdu, apduParam->Lc );
+        RFAL_MEMMOVE( &apduParam->cApduBuf->apdu[hdrLen], apduParam->cApduBuf->apdu, apduParam->Lc );
     }
     
     /* Prepend the ADPDU's header */
@@ -158,7 +158,7 @@ ReturnCode rfalT4TPollerComposeCAPDU( const rfalT4tCApduParam *apduParam )
     
     *(apduParam->cApduLen) = msgIt;
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 
@@ -167,24 +167,24 @@ ReturnCode rfalT4TPollerParseRAPDU( rfalT4tRApduParam *apduParam )
 {
     if( (apduParam == NULL) || (apduParam->rApduBuf == NULL) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     if( apduParam->rcvdLen < RFAL_T4T_MAX_RAPDU_SW1SW2_LEN )
     {
-        return ERR_PROTO;
+        return RFAL_ERR_PROTO;
     }
 
     apduParam->rApduBodyLen = (apduParam->rcvdLen - (uint16_t)RFAL_T4T_MAX_RAPDU_SW1SW2_LEN);
-    apduParam->statusWord   = GETU16( &apduParam->rApduBuf->apdu[ apduParam->rApduBodyLen ] );
+    apduParam->statusWord   = RFAL_GETU16( &apduParam->rApduBuf->apdu[ apduParam->rApduBodyLen ] );
 
     /* Check SW1 SW2    T4T 1.0 5.1.3 NOTE */
     if( apduParam->statusWord == RFAL_T4T_ISO7816_STATUS_COMPLETE )
     {
-        return ERR_NONE;
+        return RFAL_ERR_NONE;
     }
 
-    return ERR_REQUEST;
+    return RFAL_ERR_REQUEST;
 }
 
 
@@ -195,7 +195,7 @@ ReturnCode rfalT4TPollerComposeSelectAppl( rfalIsoDepApduBufFormat *cApduBuf, co
     
     if( cApduBuf == NULL )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
 
     /* CLA INS P1  P2   Lc  Data   Le  */
@@ -213,7 +213,7 @@ ReturnCode rfalT4TPollerComposeSelectAppl( rfalIsoDepApduBufFormat *cApduBuf, co
     
     if( (aid != NULL) && (aidLen > 0U) )
     {
-        ST_MEMCPY( cAPDU.cApduBuf->apdu, aid, aidLen );
+        RFAL_MEMCPY( cAPDU.cApduBuf->apdu, aid, aidLen );
     }
     
     return rfalT4TPollerComposeCAPDU( &cAPDU );
@@ -227,7 +227,7 @@ ReturnCode rfalT4TPollerComposeSelectFile( rfalIsoDepApduBufFormat *cApduBuf, co
     
     if( cApduBuf == NULL )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
 
     /* CLA INS P1  P2   Lc  Data   Le  */
@@ -245,7 +245,7 @@ ReturnCode rfalT4TPollerComposeSelectFile( rfalIsoDepApduBufFormat *cApduBuf, co
     
     if( (fid != NULL) && (fidLen > 0U) )
     {
-        ST_MEMCPY( cAPDU.cApduBuf->apdu, fid, fidLen );
+        RFAL_MEMCPY( cAPDU.cApduBuf->apdu, fid, fidLen );
     }
     
     return rfalT4TPollerComposeCAPDU( &cAPDU );
@@ -259,7 +259,7 @@ ReturnCode rfalT4TPollerComposeSelectFileV1Mapping( rfalIsoDepApduBufFormat *cAp
     
     if( cApduBuf == NULL )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     /* CLA INS P1  P2   Lc  Data   Le  */
@@ -277,7 +277,7 @@ ReturnCode rfalT4TPollerComposeSelectFileV1Mapping( rfalIsoDepApduBufFormat *cAp
     
     if( (fid != NULL) && (fidLen > 0U) )
     {
-        ST_MEMCPY( cAPDU.cApduBuf->apdu, fid, fidLen );
+        RFAL_MEMCPY( cAPDU.cApduBuf->apdu, fid, fidLen );
     }
     
     return rfalT4TPollerComposeCAPDU( &cAPDU );
@@ -289,7 +289,7 @@ ReturnCode rfalT4TPollerComposeReadData( rfalIsoDepApduBufFormat *cApduBuf, uint
 {    
     rfalT4tCApduParam cAPDU;
 
-    ST_MEMSET( &cAPDU, 0x00, sizeof(rfalT4tCApduParam) );
+    RFAL_MEMSET( &cAPDU, 0x00, sizeof(rfalT4tCApduParam) );
   
     /* CLA INS P1  P2   Lc  Data   Le  */
     /* 00h B0h [Offset] -   -      len */     
@@ -345,10 +345,10 @@ ReturnCode rfalT4TPollerComposeWriteData( rfalIsoDepApduBufFormat *cApduBuf, uin
     
     if( cApduBuf == NULL )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
 
-    ST_MEMSET( &cAPDU, 0x00, sizeof(rfalT4tCApduParam) );
+    RFAL_MEMSET( &cAPDU, 0x00, sizeof(rfalT4tCApduParam) );
 
 
     /* CLA INS P1  P2   Lc  Data   Le  */
@@ -365,7 +365,7 @@ ReturnCode rfalT4TPollerComposeWriteData( rfalIsoDepApduBufFormat *cApduBuf, uin
     
     if( (data != NULL) && (dataLen > 0U) )
     {
-        ST_MEMCPY( cAPDU.cApduBuf->apdu, data, dataLen );
+        RFAL_MEMCPY( cAPDU.cApduBuf->apdu, data, dataLen );
     }
     
     return rfalT4TPollerComposeCAPDU( &cAPDU );
@@ -379,10 +379,10 @@ ReturnCode rfalT4TPollerComposeWriteDataODO( rfalIsoDepApduBufFormat *cApduBuf, 
     
     if( cApduBuf == NULL )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
 
-    ST_MEMSET( &cAPDU, 0x00, sizeof(rfalT4tCApduParam) );
+    RFAL_MEMSET( &cAPDU, 0x00, sizeof(rfalT4tCApduParam) );
         
     /* CLA INS P1  P2   Lc  Data                     Le  */
     /* 00h D7h 00h 00h  len 54 03 xxyyzz 53 Ld data  -   */
@@ -407,12 +407,12 @@ ReturnCode rfalT4TPollerComposeWriteDataODO( rfalIsoDepApduBufFormat *cApduBuf, 
     
     if( (((uint32_t)dataLen + (uint32_t)dataIt) >= RFAL_T4T_MAX_LC) ||  (((uint32_t)dataLen + (uint32_t)dataIt) >= RFAL_FEATURE_ISO_DEP_APDU_MAX_LEN) )
     {
-        return (ERR_NOMEM);
+        return (RFAL_ERR_NOMEM);
     }
     
     if( (data != NULL) && (dataLen > 0U) )
     {
-        ST_MEMCPY( &cAPDU.cApduBuf->apdu[dataIt], data, dataLen );
+        RFAL_MEMCPY( &cAPDU.cApduBuf->apdu[dataIt], data, dataLen );
     }
     dataIt += dataLen;
     cAPDU.Lc = dataIt;

@@ -57,8 +57,8 @@
 * INCLUDES
 ******************************************************************************
 */
-#include "platform.h"
-#include "st_errno.h"
+#include "rfal_platform.h"
+#include "rfal_utils.h"
 #include "rfal_rf.h"
 #include "rfal_nfca.h"
 #include "rfal_nfcb.h"
@@ -75,18 +75,18 @@
 ******************************************************************************
 */
 
-#define RFAL_NFC_TECH_NONE               0x0000U  /*!< No technology              */
-#define RFAL_NFC_POLL_TECH_A             0x0001U  /*!< NFC-A technology Flag      */
-#define RFAL_NFC_POLL_TECH_B             0x0002U  /*!< NFC-B technology Flag      */
-#define RFAL_NFC_POLL_TECH_F             0x0004U  /*!< NFC-F technology Flag      */
-#define RFAL_NFC_POLL_TECH_V             0x0008U  /*!< NFC-V technology Flag      */
-#define RFAL_NFC_POLL_TECH_AP2P          0x0010U  /*!< AP2P technology Flag       */
-#define RFAL_NFC_POLL_TECH_ST25TB        0x0020U  /*!< ST25TB technology Flag     */
-#define RFAL_NFC_POLL_TECH_PROP          0x0040U  /*!< Proprietary technology Flag*/
-#define RFAL_NFC_LISTEN_TECH_A           0x1000U  /*!< NFC-V technology Flag      */
-#define RFAL_NFC_LISTEN_TECH_B           0x2000U  /*!< NFC-V technology Flag      */
-#define RFAL_NFC_LISTEN_TECH_F           0x4000U  /*!< NFC-V technology Flag      */
-#define RFAL_NFC_LISTEN_TECH_AP2P        0x8000U  /*!< NFC-V technology Flag      */
+#define RFAL_NFC_TECH_NONE               0x0000U  /*!< No technology                     */
+#define RFAL_NFC_POLL_TECH_A             0x0001U  /*!< Poll NFC-A technology Flag        */
+#define RFAL_NFC_POLL_TECH_B             0x0002U  /*!< Poll NFC-B technology Flag        */
+#define RFAL_NFC_POLL_TECH_F             0x0004U  /*!< Poll NFC-F technology Flag        */
+#define RFAL_NFC_POLL_TECH_V             0x0008U  /*!< Poll NFC-V technology Flag        */
+#define RFAL_NFC_POLL_TECH_AP2P          0x0010U  /*!< Poll AP2P technology Flag         */
+#define RFAL_NFC_POLL_TECH_ST25TB        0x0020U  /*!< Poll ST25TB technology Flag       */
+#define RFAL_NFC_POLL_TECH_PROP          0x0040U  /*!< Poll Proprietary technology Flag  */
+#define RFAL_NFC_LISTEN_TECH_A           0x1000U  /*!< Listen NFC-A technology Flag      */
+#define RFAL_NFC_LISTEN_TECH_B           0x2000U  /*!< Listen NFC-B technology Flag      */
+#define RFAL_NFC_LISTEN_TECH_F           0x4000U  /*!< Listen NFC-F technology Flag      */
+#define RFAL_NFC_LISTEN_TECH_AP2P        0x8000U  /*!< Listen AP2P technology Flag       */
 
 
 /*
@@ -106,6 +106,26 @@
 
 /*! Checks if remote device is in Listen mode */
 #define rfalNfcIsRemDevListener( tp )  ( ((int16_t)(tp)>= (int16_t)RFAL_NFC_LISTEN_TYPE_NFCA) && ((tp)<=RFAL_NFC_LISTEN_TYPE_AP2P) )
+
+/*! Sets the discover parameters to its default values */
+#define rfalNfcDefaultDiscParams( dp )  if( (dp) != NULL) {                                                               \
+                                        RFAL_MEMSET( (dp), 0x00, sizeof(rfalNfcDiscoverParam) );                          \
+                                        ((rfalNfcDiscoverParam*)(dp))->compMode               = RFAL_COMPLIANCE_MODE_NFC; \
+                                        ((rfalNfcDiscoverParam*)(dp))->devLimit               = 1U;                       \
+                                        ((rfalNfcDiscoverParam*)(dp))->nfcfBR                 = RFAL_BR_212;              \
+                                        ((rfalNfcDiscoverParam*)(dp))->ap2pBR                 = RFAL_BR_424;              \
+                                        ((rfalNfcDiscoverParam*)(dp))->maxBR                  = RFAL_BR_KEEP;             \
+                                        ((rfalNfcDiscoverParam*)(dp))->isoDepFS               = RFAL_ISODEP_FSXI_256;     \
+                                        ((rfalNfcDiscoverParam*)(dp))->nfcDepLR               = RFAL_NFCDEP_LR_254;       \
+                                        ((rfalNfcDiscoverParam*)(dp))->GBLen                  = 0U;                       \
+                                        ((rfalNfcDiscoverParam*)(dp))->p2pNfcaPrio            = false;                    \
+                                        ((rfalNfcDiscoverParam*)(dp))->wakeupEnabled          = false;                    \
+                                        ((rfalNfcDiscoverParam*)(dp))->wakeupConfigDefault    = true;                     \
+                                        ((rfalNfcDiscoverParam*)(dp))->wakeupNPolls           = 1U;                       \
+                                        ((rfalNfcDiscoverParam*)(dp))->totalDuration          = 1000U;                    \
+                                        ((rfalNfcDiscoverParam*)(dp))->techs2Find             = RFAL_NFC_TECH_NONE;       \
+                                        ((rfalNfcDiscoverParam*)(dp))->techs2Bail             = RFAL_NFC_TECH_NONE;       \
+                                        }
 
 /*
 ******************************************************************************
@@ -165,6 +185,14 @@ typedef enum{
 }rfalNfcRfInterface;
 
 
+/*! Deactivation type                                                                     */
+typedef enum{
+    RFAL_NFC_DEACTIVATE_IDLE                = 0,    /*!< Deactivate and go to IDLE        */
+    RFAL_NFC_DEACTIVATE_SLEEP               = 1,    /*!< Deactivate and go to SELECT      */
+    RFAL_NFC_DEACTIVATE_DISCOVERY           = 2     /*!< Deactivate and restart DISCOVERY */
+}rfalNfcDeactivateType;
+
+
 /*! Device struct containing all its details                                          */
 typedef struct{
     rfalNfcDevType type;                            /*!< Device's type                */
@@ -206,6 +234,7 @@ typedef struct{
 typedef struct{                                                                                             
     rfalComplianceMode     compMode;                         /*!< Compliancy mode to be used                                         */
     uint16_t               techs2Find;                       /*!< Technologies to search for                                         */
+    uint16_t               techs2Bail;                       /*!< Bail-out after certain NFC technologies                            */
     uint16_t               totalDuration;                    /*!< Duration of a whole Poll + Listen cycle        NCI 2.1 Table 46    */
     uint8_t                devLimit;                         /*!< Max number of devices                      Activity 2.1  Table 11  */
     rfalBitRate            maxBR;                            /*!< Max Bit rate to be used                        NCI 2.1  Table 28   */
@@ -258,18 +287,20 @@ typedef union{  /*  PRQA S 0750 # MISRA 19.2 - Members of the union will not be 
  */
 void rfalNfcWorker( void );
 
+
 /*! 
  *****************************************************************************
  * \brief  RFAL NFC Initialize
  *  
  * It initializes this module and its dependencies
  *
- * \return ERR_WRONG_STATE  : Incorrect state for this operation
- * \return ERR_IO           : Generic internal error
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : Incorrect state for this operation
+ * \return RFAL_ERR_IO           : Generic internal error
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcInitialize( void );
+
 
 /*!
  *****************************************************************************
@@ -283,14 +314,15 @@ ReturnCode rfalNfcInitialize( void );
  * The number of devices on the list is indicated by the devLimit and shall
  * be at >= 1.
  *
- * \param[in]  disParams    : discovery configuration parameters
+ * \param[in]  disParams         : discovery configuration parameters
  *
- * \return ERR_WRONG_STATE  : Incorrect state for this operation
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : Incorrect state for this operation
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcDiscover( const rfalNfcDiscoverParam *disParams );
+
 
 /*!
  *****************************************************************************
@@ -303,6 +335,7 @@ ReturnCode rfalNfcDiscover( const rfalNfcDiscoverParam *disParams );
  */
 rfalNfcState rfalNfcGetState( void );
 
+
 /*!
  *****************************************************************************
  * \brief  RFAL NFC Get Devices Found
@@ -310,16 +343,17 @@ rfalNfcState rfalNfcGetState( void );
  * It returns the location of the device list and the number of 
  * devices found.
  *
- * \param[out]  devList     : device list location
- * \param[out]  devCnt      : number of devices found
+ * \param[out]  devList          : device list location
+ * \param[out]  devCnt           : number of devices found
  *
- * \return ERR_WRONG_STATE  : Incorrect state for this operation
- *                            Discovery still ongoing
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : Incorrect state for this operation
+ *                                 Discovery still ongoing
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcGetDevicesFound( rfalNfcDevice **devList, uint8_t *devCnt );
+
 
 /*!
  *****************************************************************************
@@ -327,12 +361,12 @@ ReturnCode rfalNfcGetDevicesFound( rfalNfcDevice **devList, uint8_t *devCnt );
  *  
  * It returns the location of the device current Active device
  *
- * \param[out]  dev           : device info location
+ * \param[out]  dev                : device info location
  *
- * \return ERR_WRONG_STATE    : Incorrect state for this operation
- *                              No device activated
- * \return ERR_PARAM          : Invalid parameters
- * \return ERR_NONE           : No error
+ * \return RFAL_ERR_WRONG_STATE    : Incorrect state for this operation
+ *                                   No device activated
+ * \return RFAL_ERR_PARAM          : Invalid parameters
+ * \return RFAL_ERR_NONE           : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcGetActiveDevice( rfalNfcDevice **dev );
@@ -344,17 +378,18 @@ ReturnCode rfalNfcGetActiveDevice( rfalNfcDevice **dev );
  *  
  * It selects the device to be activated.
  * It shall be called when more than one device has been identified to 
- * indiacte which device shall be actived
+ * indicate which device shall be actived
  * 
- * \param[in]  devIdx       : device index to be activated
+ * \param[in]  devIdx            : device index to be activated
  *
- * \return ERR_WRONG_STATE  : Incorrect state for this operation
- *                            Not in select state
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : Incorrect state for this operation
+ *                                 Not in select state
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcSelect( uint8_t devIdx );
+
 
 /*!
  *****************************************************************************
@@ -376,16 +411,17 @@ ReturnCode rfalNfcSelect( uint8_t devIdx );
  *                            If ISO-DEP or NFC-DEP interface is used, this will be ignored
  *
  * \warning In order to support a wider range of protocols, when RF interface is used the lengths 
- *         are in number of bits (not bytes). Therefore both input txDataLen and output rvdLen refer to 
- *         bits. If ISO-DEP or NFC-DEP interface is used those are expressed in number of bytes.
+ *          are in number of bits (not bytes). Therefore both input txDataLen and output rvdLen refer to 
+ *          bits. If ISO-DEP or NFC-DEP interface is used those are expressed in number of bytes.
  *
  *
- * \return ERR_WRONG_STATE  : Incorrect state for this operation
- * \return ERR_PARAM        : Invalid parameters
- * \return ERR_NONE         : No error
+ * \return RFAL_ERR_WRONG_STATE  : Incorrect state for this operation
+ * \return RFAL_ERR_PARAM        : Invalid parameters
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
 ReturnCode rfalNfcDataExchangeStart( uint8_t *txData, uint16_t txDataLen, uint8_t **rxData, uint16_t **rvdLen, uint32_t fwt );
+
 
 /*! 
  *****************************************************************************
@@ -393,38 +429,44 @@ ReturnCode rfalNfcDataExchangeStart( uint8_t *txData, uint16_t txDataLen, uint8_
  *  
  * Gets current Data Exchange status
  *
- * \return  ERR_NONE         : Transceive done with no error
- * \return  ERR_BUSY         : Transceive ongoing
- *  \return ERR_AGAIN        : received one chaining block, copy received data 
- *                             and continue to call this method to retrieve the 
- *                             remaining blocks
- * \return  ERR_XXXX         : Error occurred
- * \return  ERR_TIMEOUT      : No response
- * \return  ERR_FRAMING      : Framing error detected
- * \return  ERR_PAR          : Parity error detected
- * \return  ERR_CRC          : CRC error detected
- * \return  ERR_LINK_LOSS    : Link Loss - External Field is Off
- * \return  ERR_RF_COLLISION : Collision detected
- * \return  ERR_IO           : Internal error
+ * \return  RFAL_ERR_NONE         : Transceive done with no error
+ * \return  RFAL_ERR_BUSY         : Transceive ongoing
+ *  \return RFAL_ERR_AGAIN        : received one chaining block, copy received data 
+ *                                  and continue to call this method to retrieve the 
+ *                                  remaining blocks
+ * \return  RFAL_ERR_XXXX         : Error occurred
+ * \return  RFAL_ERR_TIMEOUT      : No response
+ * \return  RFAL_ERR_FRAMING      : Framing error detected
+ * \return  RFAL_ERR_PAR          : Parity error detected
+ * \return  RFAL_ERR_CRC          : CRC error detected
+ * \return  RFAL_ERR_LINK_LOSS    : Link Loss - External Field is Off
+ * \return  RFAL_ERR_RF_COLLISION : Collision detected
+ * \return  RFAL_ERR_IO           : Internal error
  *****************************************************************************
  */
 ReturnCode rfalNfcDataExchangeGetStatus( void );
+
 
 /*! 
  *****************************************************************************
  * \brief  RFAL NFC Deactivate
  *  
  * It triggers the deactivation procedure to terminate communications with 
- * remote device. At the end the field will be turned off.
+ * remote device. 
+ * In case the deactivation type is RFAL_NFC_DEACTIVATE_SLEEP the field is
+ * kept On and device selection shall follow. Otherwise the field will 
+ * be turned Off.
  *
- * \param[in]  discovery    : TRUE if after deactivation go back into discovery
- *                          : FALSE if after deactivation remain in idle
+ * \warning In case the deactivation type is RFAL_NFC_DEACTIVATE_IDLE the 
+ *  deactivation procedure is executed immediately and in a blocking manner
  *
- * \return ERR_WRONG_STATE  : Incorrect state for this operation
- * \return ERR_NONE         : No error
+ * \param[in]  deactType         : Type of deactivation to be performed
+ *
+ * \return RFAL_ERR_WRONG_STATE  : Incorrect state for this operation
+ * \return RFAL_ERR_NONE         : No error
  *****************************************************************************
  */
-ReturnCode rfalNfcDeactivate( bool discovery );
+ReturnCode rfalNfcDeactivate( rfalNfcDeactivateType deactType );
 
 #endif /* RFAL_NFC_H */
 

@@ -39,7 +39,7 @@
  */
 #include "rfal_st25xv.h"
 #include "rfal_nfcv.h"
-#include "utils.h"
+#include "rfal_utils.h"
 
 /*
  ******************************************************************************
@@ -107,17 +107,17 @@ static ReturnCode rfalST25xVPollerGenericReadConfiguration(uint8_t cmd, uint8_t 
     
     if( regValue == NULL )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     p = pointer;
     
     ret = rfalNfcvPollerTransceiveReq( cmd, flags, RFAL_NFCV_ST_IC_MFG_CODE, uid, &p, sizeof(uint8_t), (uint8_t*)&res, sizeof(rfalNfcvGenericRes), &rcvLen );
-    if( ret == ERR_NONE )
+    if( ret == RFAL_ERR_NONE )
     {
         if( rcvLen < RFAL_ST25xV_READ_CONFIG_LEN )
         {
-            ret = ERR_PROTO;
+            ret = RFAL_ERR_PROTO;
         }
         else
         {
@@ -153,15 +153,15 @@ static ReturnCode rfalST25xVPollerGenericReadMessageLength( uint8_t cmd, uint8_t
     
     if( msgLen == NULL )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
 
     ret = rfalNfcvPollerTransceiveReq( cmd, flags, RFAL_NFCV_ST_IC_MFG_CODE, uid, NULL, 0, (uint8_t*)&res, sizeof(rfalNfcvGenericRes), &rcvLen );
-    if( ret == ERR_NONE )
+    if( ret == RFAL_ERR_NONE )
     {
         if( rcvLen < RFAL_ST25xV_READ_MSG_LEN_LEN )
         {
-            ret = ERR_PROTO;
+            ret = RFAL_ERR_PROTO;
         }
         else
         {
@@ -204,7 +204,7 @@ static ReturnCode rfalST25xVPollerGenericWriteMessage( uint8_t cmd, uint8_t flag
     /* Check for valid parameters */
     if( (txBuf == NULL) || (msgData == NULL) || (txBufLen < msgIt) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     msgIt    = 0;
@@ -230,11 +230,11 @@ static ReturnCode rfalST25xVPollerGenericWriteMessage( uint8_t cmd, uint8_t flag
     
     if( uid != NULL )
     {
-        ST_MEMCPY( &txBuf[msgIt], uid, RFAL_NFCV_UID_LEN );
+        RFAL_MEMCPY( &txBuf[msgIt], uid, RFAL_NFCV_UID_LEN );
         msgIt += RFAL_NFCV_UID_LEN;
     }
     txBuf[msgIt++] = msgLen;
-    ST_MEMCPY( &txBuf[msgIt], msgData, (uint16_t)(msgLen +(uint16_t) 1U) ); /* Message Data contains (MSGLength + 1) bytes */
+    RFAL_MEMCPY( &txBuf[msgIt], msgData, (uint16_t)(msgLen +(uint16_t) 1U) ); /* Message Data contains (MSGLength + 1) bytes */
     msgIt += (uint16_t)(msgLen + (uint16_t)1U);
     
     /* Transceive Command */
@@ -247,7 +247,7 @@ static ReturnCode rfalST25xVPollerGenericWriteMessage( uint8_t cmd, uint8_t flag
         rfalSetBitRate( RFAL_BR_KEEP, rxBR );
     }
     
-    if( ret != ERR_NONE )
+    if( ret != RFAL_ERR_NONE )
     {
         return ret;
     }
@@ -255,16 +255,16 @@ static ReturnCode rfalST25xVPollerGenericWriteMessage( uint8_t cmd, uint8_t flag
     /* Check if the response minimum length has been received */
     if( rcvLen < (uint8_t)RFAL_NFCV_FLAG_LEN )
     {
-        return ERR_PROTO;
+        return RFAL_ERR_PROTO;
     }
     
     /* Check if an error has been signalled */
     if( (res.RES_FLAG & (uint8_t)RFAL_NFCV_RES_FLAG_ERROR) != 0U )
     {
-        return ERR_PROTO;
+        return RFAL_ERR_PROTO;
     }
     
-    return ERR_NONE;
+    return RFAL_ERR_NONE;
 }
 
 /*
@@ -299,7 +299,7 @@ ReturnCode rfalST25xVPollerM24LRWriteSingleBlock( uint8_t flags, const uint8_t* 
     /* Check for valid parameters */
     if( (blockLen == 0U) || (blockLen > (uint8_t)RFAL_NFCV_MAX_BLOCK_LEN) || (wrData == NULL) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     dataLen = 0U;
@@ -307,7 +307,7 @@ ReturnCode rfalST25xVPollerM24LRWriteSingleBlock( uint8_t flags, const uint8_t* 
     /* Compute Request Data */
     data[dataLen++] = (uint8_t)blockNum;         /* Set M24LR Block Number (16 bits) LSB */
     data[dataLen++] = (uint8_t)(blockNum >> 8U); /* Set M24LR Block Number (16 bits) MSB */
-    ST_MEMCPY( &data[dataLen], wrData, blockLen ); /* Append Block data to write       */
+    RFAL_MEMCPY( &data[dataLen], wrData, blockLen ); /* Append Block data to write       */
     dataLen += blockLen;
     
     return rfalNfcvPollerTransceiveReq( RFAL_NFCV_CMD_WRITE_SINGLE_BLOCK, (flags | (uint8_t)RFAL_NFCV_REQ_FLAG_PROTOCOL_EXT), RFAL_NFCV_PARAM_SKIP, uid, data, dataLen, (uint8_t*)&res, sizeof(rfalNfcvGenericRes), &rcvLen );
@@ -463,18 +463,43 @@ ReturnCode rfalST25xVPollerPresentPassword( uint8_t flags, const uint8_t* uid, u
     
     if( (pwdLen > RFAL_ST25xV_PWD_LEN) || (pwd == NULL) )
     {
-        return ERR_PARAM;
+        return RFAL_ERR_PARAM;
     }
     
     dataLen = 0U;
     data[dataLen++] = pwdNum;
     if( pwdLen > 0U )
     {
-        ST_MEMCPY(&data[dataLen], pwd, pwdLen);
+        RFAL_MEMCPY(&data[dataLen], pwd, pwdLen);
     }
     dataLen += pwdLen;
     
     return rfalNfcvPollerTransceiveReq( RFAL_NFCV_CMD_PRESENT_PASSWORD, flags, RFAL_NFCV_ST_IC_MFG_CODE, uid, data, dataLen, (uint8_t*)&res, sizeof(rfalNfcvGenericRes), &rcvLen );
+    
+}
+
+/*******************************************************************************/
+ReturnCode rfalST25xVPollerWritePassword( uint8_t flags, const uint8_t* uid, uint8_t pwdNum, const uint8_t *pwd,  uint8_t pwdLen)
+{
+    uint8_t            data[RFAL_ST25xV_PWDNUM_LEN + RFAL_ST25xV_PWD_LEN];
+    uint8_t            dataLen;
+    uint16_t           rcvLen;
+    rfalNfcvGenericRes res;
+    
+    if( (pwdLen > RFAL_ST25xV_PWD_LEN) || (pwd == NULL) )
+    {
+        return RFAL_ERR_PARAM;
+    }
+    
+    dataLen = 0U;
+    data[dataLen++] = pwdNum;
+    if( pwdLen > 0U )
+    {
+        RFAL_MEMCPY(&data[dataLen], pwd, pwdLen);
+    }
+    dataLen += pwdLen;
+    
+    return rfalNfcvPollerTransceiveReq( RFAL_NFCV_CMD_WRITE_PASSWORD, flags, RFAL_NFCV_ST_IC_MFG_CODE, uid, data, dataLen, (uint8_t*)&res, sizeof(rfalNfcvGenericRes), &rcvLen );
     
 }
 

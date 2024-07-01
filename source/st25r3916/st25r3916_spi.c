@@ -33,12 +33,6 @@ static const struct device *spi_dev = DEVICE_DT_GET(DT_BUS(ST25R3911B_NODE));
 #define SPI_BUF_LEN   512
 static uint8_t   spi_txBuf[SPI_BUF_LEN];
 
-/* SPI CS pin configuration */
-static struct spi_cs_control spi_cs = {
-	.gpio = SPI_CS_GPIOS_DT_SPEC_GET(ST25R3911B_NODE),
-	.delay = T_NCS_SCLK
-};
-
 /* SPI hardware configuration. */
 static const struct spi_config spi_cfg =  {
 	.frequency = DT_PROP(ST25R3911B_NODE, spi_max_frequency),
@@ -46,7 +40,10 @@ static const struct spi_config spi_cfg =  {
 		      SPI_TRANSFER_MSB | SPI_LINES_SINGLE |
 		      SPI_MODE_CPHA),
 	.slave = DT_REG_ADDR(ST25R3911B_NODE),
-	.cs = &spi_cs
+	.cs = {
+		.gpio = SPI_CS_GPIOS_DT_SPEC_GET(ST25R3911B_NODE),
+		.delay = T_NCS_SCLK
+	}
 };
 
 
@@ -54,10 +51,10 @@ static const struct spi_config spi_cfg =  {
 int st25r3916_spi_init(void)
 {
 	LOG_DBG("Initializing. SPI device: %s, CS GPIO: %s pin %d",
-		spi_dev->name, spi_cs.gpio.port->name, spi_cs.gpio.pin);
+		spi_dev->name, spi_cfg.cs.gpio.port->name, spi_cfg.cs.gpio.pin);
 
-	if (!device_is_ready(spi_cs.gpio.port)) {
-		LOG_ERR("GPIO device %s is not ready!", spi_cs.gpio.port->name);
+	if (!device_is_ready(spi_cfg.cs.gpio.port)) {
+		LOG_ERR("GPIO device %s is not ready!", spi_cfg.cs.gpio.port->name);
 
 		return -ENXIO;
 	}
